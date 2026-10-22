@@ -1,0 +1,4 @@
+* text=auto eol=lf
+# Reviewed SQL hashes are byte-specific; never rewrite them on checkout/stage.
+supabase/migrations/*.sql -text
+supabase/operations/*.sql -text

@@ -1,0 +1,57 @@
+{
+  "name": "al-eyada-rx",
+  "version": "0.1.0",
+  "private": true,
+  "engines": {
+    "node": "22.x"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "next typegen && tsc --noEmit",
+    "lint": "eslint . --max-warnings=0",
+    "test:e2e": "playwright test",
+    "test:db": "node --test --test-concurrency=1 tests/database/foundation.test.mjs tests/database/drafts.test.mjs tests/database/issuance.test.mjs tests/database/issuance-owner.test.mjs tests/database/native-auth-compatibility.test.mjs tests/database/effective-timeout.test.mjs tests/database/portable-recovery.test.mjs",
+    "test:draft-validation": "node --experimental-strip-types --test tests/draft-validation.test.mjs",
+    "test:issuance-validation": "node --test tests/issuance-validation.test.mjs",
+    "test:recovery-validation": "node --test tests/recovery-validation.test.mjs",
+    "test:postgrest:setup": "node scripts/fetch-postgrest-test.mjs",
+    "test:issuance-ui": "node tests/ui/issuance-ui.mjs",
+    "test:pharmacy-ui": "node tests/ui/pharmacy-ui.mjs",
+    "test:pharmacy-validation": "node --test tests/pharmacy-validation.test.mjs",
+    "test:pharmacy-db": "node --test --test-concurrency=1 tests/database/pharmacy.test.mjs tests/database/pharmacy-http.test.mjs",
+    "test:clinical-db": "node --test --test-concurrency=1 tests/database/foundation.test.mjs tests/database/drafts.test.mjs tests/database/issuance.test.mjs tests/database/issuance-owner.test.mjs tests/database/native-auth-compatibility.test.mjs tests/database/effective-timeout.test.mjs tests/database/pharmacy.test.mjs tests/database/pharmacy-http.test.mjs",
+    "db:types": "node scripts/database-types.mjs",
+    "db:types:check": "node scripts/database-types.mjs --check",
+    "db:advisors": "node scripts/database-advisors.mjs",
+    "db:migrations:check": "node scripts/database-migrations.mjs",
+    "supabase": "supabase"
+  },
+  "dependencies": {
+    "@fontsource-variable/noto-sans-arabic": "^5.2.8",
+    "@supabase/ssr": "0.12.7",
+    "@supabase/supabase-js": "2.118.0",
+    "lucide-react": "^0.468.0",
+    "next": "16.4.2",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "server-only": "0.0.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.56.0",
+    "@supabase/typegen": "0.3.1",
+    "@tailwindcss/postcss": "^4.1.0",
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "embedded-postgres": "17.10.0-beta.17",
+    "eslint": "^9.39.0",
+    "eslint-config-next": "16.4.2",
+    "pg": "8.23.1",
+    "prettier": "3.6.2",
+    "supabase": "2.121.0",
+    "tailwindcss": "^4.1.0",
+    "typescript": "~5.9.3"
+  }
+}
