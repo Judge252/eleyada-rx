@@ -1,0 +1,706 @@
+/* Phase 1 public experience. Tokens also refresh retained protected surfaces. */
+.language-switcher {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #142b3b;
+  flex-shrink: 0;
+}
+.language-switcher select {
+  min-height: 44px;
+  max-width: 130px;
+  border: 1px solid #cbd5e1;
+  background: white;
+  color: #142b3b;
+  border-radius: 7px;
+  padding: 8px;
+  font: inherit;
+}
+.sidebar .language-switcher {
+  color: white;
+  margin-block: 12px;
+}
+.login-inner > .language-switcher {
+  margin-block-end: 24px;
+  justify-content: flex-end;
+}
+.login-demo,
+.demo-notice {
+  background: #fff8eb;
+  border-color: #efdab9;
+  color: #92400e;
+}
+.login-demo strong,
+.demo-notice strong,
+.login-demo svg,
+.demo-notice svg {
+  color: #92400e;
+}
+[dir="ltr"]
+  :is(
+    .lucide-arrow-left,
+    .lucide-arrow-right,
+    .lucide-chevron-left,
+    .lucide-chevron-right,
+    .lucide-panel-right-open,
+    .lucide-panel-right-close
+  ) {
+  transform: scaleX(-1);
+}
+.rx-review-med p,
+.document-patient strong,
+.document-medication dd {
+  unicode-bidi: plaintext;
+}
+@media print {
+  .language-switcher {
+    display: none !important;
+  }
+  html[lang="he"] .rx-receipt::before {
+    content: "קבלת הנפקה אלקטרונית — יש לבדוק במערכת את התוקף הנוכחי";
+  }
+}
+:root {
+  --navy: #142b3b;
+  --green: #0f766e;
+  --canvas: #f4f7fb;
+  --ink: #142b3b;
+  --muted: #526578;
+  --border: #dce4ec;
+  --primary: #0f766e;
+  --secondary: #2563eb;
+  --warning: #b45309;
+  --error: #b91c1c;
+}
+.rx-wordmark {
+  font-size: 25px;
+  font-weight: 750;
+  letter-spacing: -1px;
+  color: var(--ink);
+  white-space: nowrap;
+}
+.rx-wordmark bdi {
+  color: var(--primary);
+  font-family: Arial, sans-serif;
+  font-size: 24px;
+  margin-inline-start: 3px;
+}
+.sidebar .rx-wordmark {
+  color: white;
+}
+.sidebar .rx-wordmark bdi {
+  color: #99f6e4;
+}
+.brand,
+.brand-compact {
+  width: auto;
+  align-items: flex-start;
+}
+.button-primary {
+  background: var(--primary);
+  color: white;
+  box-shadow: none;
+}
+.button-primary:hover:not(:disabled) {
+  background: #115e59;
+}
+.button-secondary {
+  color: var(--ink);
+  border-color: #cbd5e1;
+}
+.button-secondary:hover:not(:disabled) {
+  background: #f0fdfa;
+  border-color: #0f766e;
+}
+.button-danger {
+  color: var(--error);
+}
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid #2563eb;
+  outline-offset: 3px;
+}
+.rx-experience {
+  min-height: 100vh;
+  background: #f4f7fb;
+  color: #142b3b;
+  font-size: 14px;
+}
+.rx-experience .button {
+  min-height: 46px;
+  font-size: 13px;
+  border-radius: 8px;
+}
+.rx-header {
+  background: white;
+  border-bottom: 1px solid var(--border);
+}
+.rx-header-inner {
+  max-width: 1240px;
+  padding: 0 32px;
+  margin: auto;
+  min-height: 88px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 35px;
+}
+.rx-header nav {
+  display: flex;
+  gap: 32px;
+  align-self: stretch;
+}
+.rx-header nav a {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+  color: #526578;
+  border-bottom: 3px solid transparent;
+  padding: 20px 0;
+  font-weight: 600;
+}
+.rx-header nav a[aria-current="page"] {
+  color: #0f766e;
+  border-bottom-color: #0f766e;
+}
+.rx-free {
+  padding: 1px 7px;
+  background: #eaf6f3;
+  color: #115e59;
+  border-radius: 4px;
+  font-size: 10px;
+}
+.rx-header-note {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #526578;
+  font-size: 11px;
+}
+.rx-preview-bar {
+  background: #fff8eb;
+  border-bottom: 1px solid #efdab9;
+  color: #92400e;
+  text-align: center;
+  padding: 8px 20px;
+  font-size: 11px;
+}
+.rx-main {
+  max-width: 1180px;
+  padding: 36px 24px 56px;
+  margin: auto;
+}
+.rx-intro {
+  margin-bottom: 28px;
+}
+.rx-eyebrow {
+  color: #0f766e;
+  font-size: 11px;
+  font-weight: 650;
+  margin-bottom: 8px;
+}
+.rx-intro h1 {
+  font-size: 34px;
+  color: #142b3b;
+  font-weight: 750;
+  letter-spacing: -1px;
+  margin-bottom: 6px;
+}
+.rx-intro > p {
+  color: #526578;
+  font-size: 14px;
+}
+.rx-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 26px;
+  align-items: start;
+}
+.rx-primary {
+  min-width: 0;
+}
+.rx-card {
+  background: white;
+  border: 1px solid #dce4ec;
+  border-radius: 12px;
+  padding: 25px;
+  margin-bottom: 20px;
+  box-shadow: 0 3px 12px #142b3b03;
+  overflow-wrap: anywhere;
+}
+.rx-section-title {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  margin-bottom: 23px;
+}
+.rx-section-title h2 {
+  font-size: 17px;
+  color: #142b3b;
+}
+.rx-section-title p {
+  color: #526578;
+  font-size: 11px;
+  margin-top: 3px;
+}
+.rx-number {
+  background: #edf7f5;
+  color: #0f766e;
+  height: 36px;
+  width: 36px;
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+  font-family: Arial, sans-serif;
+  font-weight: 700;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+.rx-steps {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 8px 20px;
+  margin: 0;
+  list-style: none;
+}
+.rx-steps li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #526578;
+  font-size: 12px;
+}
+.rx-steps li > span {
+  border: 1px solid #cad6e0;
+  background: #fff;
+  border-radius: 50%;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  font-family: Arial, sans-serif;
+}
+.rx-steps li[aria-current="step"] {
+  color: #0f766e;
+  font-weight: 700;
+}
+.rx-steps li[aria-current="step"] > span {
+  background: #0f766e;
+  border-color: #0f766e;
+  color: white;
+}
+.rx-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+.rx-field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+  font-size: 12px;
+  font-weight: 550;
+}
+.rx-required {
+  color: #b91c1c;
+}
+.rx-experience .input {
+  width: 100%;
+  min-width: 0;
+  min-height: 46px;
+  border: 1px solid #ccd8e2;
+  border-radius: 7px;
+  background: #fff;
+  padding: 10px 12px;
+  color: #142b3b;
+  font-size: 13px;
+  box-shadow: none;
+}
+.rx-experience .input::placeholder {
+  color: #64748b;
+  opacity: 1;
+  font-size: 11px;
+}
+.rx-experience textarea {
+  resize: vertical;
+}
+.rx-help {
+  color: #526578;
+  font-size: 11px;
+  margin-top: 14px;
+}
+.rx-medication {
+  padding: 16px;
+  border: 1px solid #dce4ec;
+  border-radius: 9px;
+  margin: 0 0 16px;
+  min-width: 0;
+}
+.rx-medication legend {
+  color: #526578;
+  font-size: 11px;
+  padding: 0 6px;
+}
+.rx-med-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  font-size: 12px;
+}
+.rx-pill {
+  display: inline-grid;
+  place-items: center;
+  background: #edf7f5;
+  color: #0f766e;
+  border-radius: 5px;
+  width: 28px;
+  height: 26px;
+  margin-inline-end: 6px;
+  font-family: Georgia, serif;
+  font-style: italic;
+  font-weight: 700;
+}
+.rx-med-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 15px;
+}
+.rx-med-grid > .rx-field:first-child {
+  grid-column: span 2;
+}
+.rx-med-grid > .rx-field:last-child {
+  grid-column: span 2;
+}
+.rx-add {
+  width: 100%;
+  border-style: dashed;
+  background: #fbfdfd;
+}
+.rx-form-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+.rx-form-footer > span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #526578;
+  font-size: 10px;
+}
+.rx-aside {
+  padding-top: 46px;
+}
+.rx-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  color: #0f766e;
+  background: #edf7f5;
+  border-radius: 12px;
+  flex-shrink: 0;
+}
+.rx-context > .rx-icon {
+  margin-bottom: 16px;
+}
+.rx-context h2 {
+  font-size: 18px;
+  line-height: 1.9;
+}
+.rx-context > p {
+  color: #526578;
+  font-size: 12px;
+  margin: 8px 0 20px;
+}
+.rx-context-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 0;
+  border-top: 1px solid #edf0f4;
+  font-size: 11px;
+}
+.rx-context-row > span {
+  color: #526578;
+}
+.rx-context-row strong {
+  color: #92400e;
+  font-weight: 550;
+}
+.rx-context > .button {
+  width: 100%;
+  margin-top: 12px;
+}
+.rx-guidance {
+  padding: 5px 12px 20px;
+}
+.rx-guidance h3 {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 13px;
+}
+.rx-guidance h3 svg {
+  color: #0f766e;
+}
+.rx-guidance ul {
+  list-style: none;
+  padding: 0;
+  margin: 16px 0;
+  display: grid;
+  gap: 14px;
+}
+.rx-guidance li {
+  display: flex;
+  gap: 9px;
+  color: #526578;
+  font-size: 11px;
+}
+.rx-guidance li svg {
+  color: #0f766e;
+}
+.rx-guidance > p,
+.rx-small-note {
+  font-size: 11px;
+  color: #526578;
+  line-height: 2;
+}
+.rx-small-note {
+  border-top: 1px solid #dce4ec;
+  padding: 18px 12px;
+}
+.rx-footer {
+  max-width: 1132px;
+  margin: auto;
+  border-top: 1px solid #dce4ec;
+  padding: 22px 0 30px;
+  color: #526578;
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  font-size: 10px;
+}
+.rx-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  color: #92400e;
+  background: #fff8eb;
+  border: 1px solid #f0d9b5;
+  border-radius: 8px;
+  padding: 13px;
+  font-size: 12px;
+  margin: 16px 0;
+}
+.rx-notice svg {
+  margin-top: 3px;
+}
+.rx-auth {
+  margin-top: 20px;
+  display: grid;
+  gap: 14px;
+}
+.rx-auth p {
+  font-size: 11px;
+}
+.rx-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 22px;
+}
+.rx-details {
+  margin: 20px 0;
+}
+.rx-details > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 12px 0;
+  border-bottom: 1px solid #edf0f4;
+}
+.rx-details dt {
+  color: #526578;
+  font-size: 12px;
+}
+.rx-details dd {
+  margin: 0;
+  font-weight: 600;
+}
+.rx-review-med {
+  border-bottom: 1px solid #dce4ec;
+  padding: 16px 0;
+}
+.rx-review-med p {
+  color: #526578;
+  margin-top: 6px;
+}
+.rx-receipt-icon {
+  display: inline-grid;
+  place-items: center;
+  background: #edf7f5;
+  color: #0f766e;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  margin-bottom: 20px;
+}
+.rx-result {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  border-bottom: 1px solid #dce4ec;
+  padding: 20px 0;
+  align-items: center;
+}
+.rx-result p,
+.rx-result small {
+  color: #526578;
+  font-size: 11px;
+}
+.rx-checkbox {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin: 22px 0;
+  cursor: pointer;
+}
+.rx-checkbox input {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  accent-color: #0f766e;
+  margin-top: 3px;
+}
+@media (max-width: 1000px) {
+  .rx-header-note {
+    display: none;
+  }
+  .rx-layout {
+    grid-template-columns: minmax(0, 1fr) 260px;
+    gap: 18px;
+  }
+  .rx-card {
+    padding: 20px;
+  }
+  .rx-med-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .rx-med-grid > .rx-field:last-child {
+    grid-column: span 2;
+  }
+  .rx-footer {
+    margin: 0 24px;
+  }
+}
+@media (max-width: 760px) {
+  .rx-header-inner {
+    padding: 14px 20px 0;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .rx-header nav {
+    width: 100%;
+    gap: 24px;
+  }
+  .rx-header nav a {
+    padding: 12px 0;
+    font-size: 12px;
+  }
+  .rx-main {
+    padding: 24px 16px 36px;
+  }
+  .rx-intro h1 {
+    font-size: 27px;
+  }
+  .rx-intro > p {
+    font-size: 12px;
+  }
+  .rx-layout {
+    display: flex;
+    flex-direction: column;
+  }
+  .rx-primary,
+  .rx-aside {
+    width: 100%;
+  }
+  .rx-aside {
+    padding-top: 0;
+  }
+  .rx-steps {
+    gap: 6px;
+    padding-inline: 0;
+  }
+  .rx-steps li {
+    font-size: 10px;
+    gap: 5px;
+  }
+  .rx-steps li > span {
+    width: 22px;
+    height: 22px;
+  }
+  .rx-form-footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .rx-footer {
+    flex-direction: column;
+    gap: 8px;
+    margin: 0 16px;
+  }
+}
+@media (max-width: 400px) {
+  .rx-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .rx-card {
+    padding: 18px;
+  }
+  .rx-medication {
+    padding: 12px;
+  }
+  .rx-med-grid {
+    gap: 12px;
+  }
+  .rx-result {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .rx-details > div {
+    flex-direction: column;
+    gap: 5px;
+  }
+}
+@media print {
+  .rx-experience .rx-header,
+  .rx-preview-bar,
+  .rx-aside,
+  .rx-steps,
+  .rx-footer,
+  .rx-actions,
+  .rx-experience button {
+    display: none;
+  }
+  .rx-layout {
+    display: block;
+  }
+  .rx-card {
+    box-shadow: none;
+  }
+  .rx-receipt::before {
+    content: "Electronic issuance receipt — verify eligibility in the system";
+    display: block;
+    color: #b91c1c;
+    font-weight: bold;
+    margin-bottom: 20px;
+  }
+}

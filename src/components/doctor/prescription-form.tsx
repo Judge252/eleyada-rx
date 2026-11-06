@@ -1,5 +1,5 @@
 "use client";
-
+import { useI18n } from "@/lib/i18n/client";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -42,6 +42,7 @@ export function PrescriptionForm({
   requestId: string;
   doctorEmail: string;
 }) {
+  const { t } = useI18n();
   const router = useRouter();
   const [patientMode, setPatientMode] = useState(initial ? "existing" : "new");
   const [patient, setPatient] = useState<PatientOption | null>(
@@ -99,7 +100,7 @@ export function PrescriptionForm({
       if (
         anchor &&
         !saving.current &&
-        !window.confirm("لديك تغييرات غير محفوظة. مغادرة النموذج؟")
+        !window.confirm(t("لديك تغييرات غير محفوظة. مغادرة النموذج؟"))
       )
         event.preventDefault();
     };
@@ -109,14 +110,14 @@ export function PrescriptionForm({
       window.removeEventListener("beforeunload", unload);
       document.removeEventListener("click", navigate, true);
     };
-  }, [dirty]);
+  }, [dirty, t]);
   function review(event: FormEvent) {
     event.preventDefault();
     const result = validateDraft(input);
     setErrors(result.errors);
     setMessage("");
     if (!result.data) {
-      setMessage("صحّح الحقول الموضحة قبل المراجعة.");
+      setMessage(t("صحّح الحقول الموضحة قبل المراجعة."));
       const key = Object.keys(result.errors)[0];
       formRef.current?.querySelector<HTMLElement>(`[id="${key}"]`)?.focus();
     } else setReviewing(true);
@@ -137,7 +138,9 @@ export function PrescriptionForm({
       setMessage(result.message);
     } catch {
       setMessage(
-        "تعذّر تأكيد الحفظ. أعد المحاولة بنفس النموذج؛ لا تنشئ طلبًا جديدًا حتى تتحقق من اللوحة.",
+        t(
+          "تعذّر تأكيد الحفظ. أعد المحاولة بنفس النموذج؛ لا تنشئ طلبًا جديدًا حتى تتحقق من اللوحة.",
+        ),
       );
     }
     saving.current = false;
@@ -152,7 +155,7 @@ export function PrescriptionForm({
       setPatients(result.patients);
       setPatientMessage(result.message);
     } catch {
-      setPatientMessage("تعذّر تحميل المرضى. أعد المحاولة.");
+      setPatientMessage(t("تعذّر تحميل المرضى. أعد المحاولة."));
     } finally {
       setSearching(false);
       searchingRef.current = false;
@@ -167,15 +170,15 @@ export function PrescriptionForm({
       <>
         <BackLink />
         <div className="review-heading">
-          <div className="eyebrow">مسودة / مراجعة قبل الحفظ</div>
+          <div className="eyebrow">{t("مسودة / مراجعة قبل الحفظ")}</div>
           <h1 ref={reviewHeading} tabIndex={-1}>
-            مراجعة المسودة
+            {t("مراجعة المسودة")}{" "}
           </h1>
           <p>
             {initial
-              ? "التعديلات المعروضة لم تُحفظ بعد."
-              : "هذه المسودة لم تُحفظ بعد."}{" "}
-            الحفظ لا يُصدر وصفة أو رمز صرف.
+              ? t("التعديلات المعروضة لم تُحفظ بعد.")
+              : t("هذه المسودة لم تُحفظ بعد.")}{" "}
+            {t("الحفظ لا يُصدر وصفة أو رمز صرف.")}{" "}
           </p>
           <Button
             variant="secondary"
@@ -183,7 +186,7 @@ export function PrescriptionForm({
             onClick={() => setReviewing(false)}
           >
             <Pencil size={17} />
-            العودة للتعديل
+            {t("العودة للتعديل")}{" "}
           </Button>
         </div>
         <DraftDocument
@@ -196,19 +199,21 @@ export function PrescriptionForm({
         <div className="form-action-bar no-print">
           <p>
             <Info size={18} />
-            مسودة غير صالحة للصرف — بيانات اصطناعية فقط خلال الاختبار.
+            {t(
+              "مسودة غير صالحة للصرف — بيانات اصطناعية فقط خلال الاختبار.",
+            )}{" "}
           </p>
           <Button disabled={pending} onClick={save}>
-            {pending ? "جارٍ الحفظ…" : "حفظ المسودة"}
+            {pending ? t("جارٍ الحفظ…") : t("حفظ المسودة")}
           </Button>
         </div>
         {message && (
           <p className="feedback-message" role="alert">
-            {message}
+            {t(message)}
           </p>
         )}
         {Object.keys(errors).length > 0 && (
-          <p role="alert">ارجع للتعديل لتصحيح الحقول.</p>
+          <p role="alert">{t("ارجع للتعديل لتصحيح الحقول.")}</p>
         )}
       </>
     );
@@ -216,16 +221,18 @@ export function PrescriptionForm({
     <>
       <BackLink />
       <PageHeading
-        eyebrow="مساحة الطبيب / مسودة"
-        title={initial ? "تعديل المسودة" : "إنشاء مسودة"}
-        description="حفظ فعلي لبيانات المريض والمسودة والأدوية معًا. استخدم بيانات اصطناعية فقط أثناء الاختبار."
+        eyebrow={t("مساحة الطبيب / مسودة")}
+        title={initial ? t("تعديل المسودة") : t("إنشاء مسودة")}
+        description={t(
+          "حفظ فعلي لبيانات المريض والمسودة والأدوية معًا. استخدم بيانات اصطناعية فقط أثناء الاختبار.",
+        )}
       />
       <p className="review-notice" role="status">
         {dirty
-          ? "تغييرات غير محفوظة"
+          ? t("تغييرات غير محفوظة")
           : initial
-            ? "النسخة المحفوظة — لم تُصدر"
-            : "مسودة جديدة غير محفوظة"}
+            ? t("النسخة المحفوظة — لم تُصدر")
+            : t("مسودة جديدة غير محفوظة")}
       </p>
       <form
         ref={formRef}
@@ -239,14 +246,19 @@ export function PrescriptionForm({
               <UserRound size={21} />
             </div>
             <div>
-              <h2>بيانات المريض</h2>
+              <h2>{t("بيانات المريض")}</h2>
               <p>
-                اختيار المريض لا يغيّر اسمه أو معرّفه في السجل. لا توجد خدمة
-                تصحيح هوية في هذه المرحلة.
+                {t(
+                  "اختيار المريض لا يغيّر اسمه أو معرّفه في السجل. لا توجد خدمة تصحيح هوية في هذه المرحلة.",
+                )}{" "}
               </p>
             </div>
           </div>
-          <Field id="patientMode" label="اختيار المريض" error={errors.patient}>
+          <Field
+            id="patientMode"
+            label={t("اختيار المريض")}
+            error={errors.patient}
+          >
             <select
               className="input"
               id="patientMode"
@@ -256,15 +268,15 @@ export function PrescriptionForm({
                 setPatientMessage("");
               }}
             >
-              <option value="new">مريض جديد</option>
-              <option value="existing">مريض مسجل</option>
+              <option value="new">{t("مريض جديد")}</option>
+              <option value="existing">{t("مريض مسجل")}</option>
             </select>
           </Field>
           {patientMode === "new" ? (
             <div className="form-grid patient-form-grid">
               <Field
                 id="patientName"
-                label="اسم المريض"
+                label={t("اسم المريض")}
                 error={errors.patientName}
               >
                 <input
@@ -278,9 +290,11 @@ export function PrescriptionForm({
               </Field>
               <Field
                 id="patientIdentifier"
-                label="معرّف المريض (اختياري)"
+                label={t("معرّف المريض (اختياري)")}
                 error={errors.patientIdentifier}
-                hint="معرّف داخلي اختياري؛ ليس رمز صرف ولا رقمًا قوميًّا مطلوبًا."
+                hint={t(
+                  "معرّف داخلي اختياري؛ ليس رمز صرف ولا رقمًا قوميًّا مطلوبًا.",
+                )}
               >
                 <input
                   className="input"
@@ -291,12 +305,12 @@ export function PrescriptionForm({
                   autoComplete="off"
                 />
               </Field>
-              <p>ينشأ سجل المريض فقط عند نجاح حفظ المسودة بالكامل.</p>
+              <p>{t("ينشأ سجل المريض فقط عند نجاح حفظ المسودة بالكامل.")}</p>
             </div>
           ) : (
             <>
               <div className="form-grid patient-form-grid">
-                <Field id="patientSearch" label="البحث عن مريض بالاسم">
+                <Field id="patientSearch" label={t("البحث عن مريض بالاسم")}>
                   <input
                     className="input"
                     id="patientSearch"
@@ -312,10 +326,10 @@ export function PrescriptionForm({
                   disabled={searching}
                   onClick={searchPatients}
                 >
-                  {searching ? "جارٍ البحث…" : "بحث عن مريض"}
+                  {searching ? t("جارٍ البحث…") : t("بحث عن مريض")}
                 </Button>
               </div>
-              <p role="status">{patientMessage}</p>
+              <p role="status">{t(patientMessage)}</p>
               {patients.length > 0 && (
                 <ul className="patient-options">
                   {patients.map((p) => (
@@ -328,7 +342,7 @@ export function PrescriptionForm({
                           setPatients([]);
                         }}
                       >
-                        {p.name} — {p.patient_identifier ?? "بلا معرّف"}
+                        {p.name} — {p.patient_identifier ?? t("بلا معرّف")}
                       </Button>
                     </li>
                   ))}
@@ -336,9 +350,9 @@ export function PrescriptionForm({
               )}
               {patient && (
                 <p className="review-notice">
-                  المريض المختار: {patient.name} —{" "}
-                  {patient.patient_identifier ?? "بلا معرّف"}. حقول الهوية
-                  للقراءة فقط.
+                  {t("المريض المختار:")} {patient.name} —{" "}
+                  {patient.patient_identifier ?? t("بلا معرّف")}
+                  {t(". حقول الهوية للقراءة فقط.")}{" "}
                 </p>
               )}
             </>
@@ -350,22 +364,26 @@ export function PrescriptionForm({
               <Pill size={21} />
             </div>
             <div>
-              <h2>الأدوية والتعليمات</h2>
-              <p>من دواء واحد إلى ٣٠ دواءً؛ لا توجد عملية إصدار أو صرف.</p>
+              <h2>{t("الأدوية والتعليمات")}</h2>
+              <p>
+                {t("من دواء واحد إلى ٣٠ دواءً؛ لا توجد عملية إصدار أو صرف.")}
+              </p>
             </div>
           </div>
           {errors.items && <p role="alert">{errors.items}</p>}
           <div className="medication-editors">
             {items.map((item, index) => (
               <fieldset className="medication-editor" key={index}>
-                <legend>الدواء {index + 1}</legend>
+                <legend>
+                  {t("الدواء")} {index + 1}
+                </legend>
                 <div className="medication-editor-top">
-                  <span>تفاصيل الدواء</span>
+                  <span>{t("تفاصيل الدواء")}</span>
                   <Button
                     type="button"
                     variant="danger"
                     disabled={items.length === 1}
-                    aria-label={`حذف الدواء ${index + 1}`}
+                    aria-label={t("حذف الدواء") + " " + (index + 1)}
                     onClick={() =>
                       setItems((current) =>
                         current.filter((_, i) => i !== index),
@@ -373,7 +391,7 @@ export function PrescriptionForm({
                     }
                   >
                     <Trash2 size={16} />
-                    حذف الدواء
+                    {t("حذف الدواء")}{" "}
                   </Button>
                 </div>
                 <div className="form-grid medication-form-grid">
@@ -381,7 +399,12 @@ export function PrescriptionForm({
                     const field = key as keyof typeof itemFields;
                     const id = `${index}-${key}`;
                     return (
-                      <Field key={key} id={id} label={label} error={errors[id]}>
+                      <Field
+                        key={key}
+                        id={id}
+                        label={t(label)}
+                        error={errors[id]}
+                      >
                         <input
                           className="input"
                           id={id}
@@ -403,7 +426,7 @@ export function PrescriptionForm({
                   })}
                   <Field
                     id={`${index}-quantity`}
-                    label="الكمية"
+                    label={t("الكمية")}
                     error={errors[`${index}-quantity`]}
                   >
                     <input
@@ -437,13 +460,13 @@ export function PrescriptionForm({
             onClick={() => setItems((current) => [...current, blank()])}
           >
             <Plus size={18} />
-            إضافة دواء آخر
+            {t("إضافة دواء آخر")}{" "}
           </Button>
         </section>
         <section className="panel form-section">
           <Field
             id="doctorNotes"
-            label="ملاحظات الطبيب (اختياري)"
+            label={t("ملاحظات الطبيب (اختياري)")}
             error={errors.doctorNotes}
           >
             <textarea
@@ -458,17 +481,17 @@ export function PrescriptionForm({
         </section>
         {message && (
           <p className="feedback-message" role="alert">
-            {message}
+            {t(message)}
           </p>
         )}
         <div className="form-action-bar">
           <p>
             <Info size={18} />
-            المراجعة لا تحفظ التغييرات.
+            {t("المراجعة لا تحفظ التغييرات.")}{" "}
           </p>
           <Button type="submit">
             <ClipboardCheck size={19} />
-            مراجعة المسودة
+            {t("مراجعة المسودة")}{" "}
           </Button>
         </div>
       </form>

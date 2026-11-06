@@ -1,5 +1,7 @@
-import { redirect } from "next/navigation";
+"use client";
+
+import { PrescriptionExperience } from "@/components/experience/prescription-experience";
 
 export default function Home() {
-  redirect("/login");
+  return <PrescriptionExperience />;
 }

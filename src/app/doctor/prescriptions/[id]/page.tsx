@@ -1,3 +1,4 @@
+import { T } from "@/lib/i18n/client";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireRole } from "@/lib/auth/server";
@@ -40,8 +41,7 @@ export default async function PrescriptionDetails({
         />
         {saved === "1" && (
           <p className="review-notice" role="status">
-            المسودة محفوظة. البيانات أدناه هي النسخة الحالية من قاعدة البيانات؛
-            لم تُصدر.
+            <T text="المسودة محفوظة. البيانات أدناه هي النسخة الحالية من قاعدة البيانات؛ لم تُصدر." />
           </p>
         )}
         {record.status === "draft" && (
@@ -50,13 +50,13 @@ export default async function PrescriptionDetails({
               className="button button-primary"
               href={`/doctor/prescriptions/${id}/issue`}
             >
-              مراجعة المسودة للإصدار
+              <T text="مراجعة المسودة للإصدار" />
             </Link>
             <Link
               className="button button-secondary"
               href={`/doctor/prescriptions/${id}/edit`}
             >
-              تعديل المسودة
+              <T text="تعديل المسودة" />
             </Link>
             <DeleteDraft key={id} id={id} version={record.updated_at} />
           </div>

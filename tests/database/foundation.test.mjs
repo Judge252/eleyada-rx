@@ -8,6 +8,7 @@ import { startTestDatabase } from "./local-postgres.mjs";
 
 let database;
 let owner;
+const doctorSession = randomUUID();
 const id = Object.fromEntries(
   [
     "doctor",
@@ -59,7 +60,15 @@ async function transaction(role, userId, operation, extraClaims = {}) {
     await owner.query(`set local role ${role}`);
     await owner.query(
       "select set_config('request.jwt.claim.sub', $1, true), set_config('request.jwt.claims', $2, true)",
-      [userId ?? "", JSON.stringify({ sub: userId, role, ...extraClaims })],
+      [
+        userId ?? "",
+        JSON.stringify({
+          sub: userId,
+          role,
+          ...(userId === id.doctor ? { session_id: doctorSession } : {}),
+          ...extraClaims,
+        }),
+      ],
     );
     return await operation(owner);
   } finally {
@@ -98,7 +107,7 @@ async function insertDispensation(
 }
 
 before(async () => {
-  database = await startTestDatabase();
+  database = await startTestDatabase({ legacyDoctorFixtures: true });
   owner = database.owner;
   for (const user of [
     id.doctor,
@@ -114,6 +123,10 @@ before(async () => {
     ($1,'Fictional pharmacy A',true),($2,'Fictional pharmacy B',true),($3,'Inactive fictional pharmacy',false)`,
     [id.pharmacyA, id.pharmacyB, id.inactivePharmacy],
   );
+  await owner.query("insert into auth.sessions(id,user_id) values($1,$2)", [
+    doctorSession,
+    id.doctor,
+  ]);
   await owner.query(
     `insert into public.app_users(id,role,pharmacy_id,is_active) values
     ($1,'doctor',null,true),($2,'pharmacist',$5,true),($3,'pharmacist',$6,true),($4,'pharmacist',$5,false)`,
@@ -169,19 +182,25 @@ after(async () => {
   if (database) await database.stop();
 });
 
-test("all seven tables, native UUID keys, RLS, enums and all dispensing uniqueness constraints exist", async () => {
+test("clinical and clinic-access tables retain keys, RLS and dispensing uniqueness", async () => {
   const result = await owner.query(
     "select tablename, rowsecurity from pg_tables where schemaname='public' order by tablename",
   );
   assert.deepEqual(
     result.rows.map((row) => row.tablename),
-    [...tables].sort(),
+    [
+      ...tables,
+      "clinics",
+      "prescribers",
+      "clinic_memberships",
+      "clinic_entitlements",
+    ].sort(),
   );
   assert.ok(result.rows.every((row) => row.rowsecurity));
   const primaryKeys =
     await owner.query(`select table_name from information_schema.table_constraints
     where table_schema='public' and constraint_type='PRIMARY KEY'`);
-  assert.equal(primaryKeys.rowCount, 7);
+  assert.equal(primaryKeys.rowCount, 11);
   const duplicate = await owner.query(
     "select contype from pg_constraint where conname='dispensations_one_per_prescription'",
   );
@@ -579,7 +598,7 @@ test("foreign keys reject nonexistent auth users, pharmacies and patients", asyn
   );
 });
 
-test("role/pharmacy combinations, second doctor and identity reassignment are rejected", async () => {
+test("role/pharmacy combinations and reassignment are rejected; individual doctors are supported", async () => {
   for (const [role, pharmacy] of [
     ["doctor", id.pharmacyA],
     ["pharmacist", null],
@@ -594,14 +613,10 @@ test("role/pharmacy combinations, second doctor and identity reassignment are re
       "23514",
     );
   }
-  await rejectsState(
-    asOwner((client) =>
-      client.query(
-        "insert into public.app_users(id,role) values ($1,'doctor')",
-        [id.unassigned],
-      ),
-    ),
-    "23505",
+  await asOwner((client) =>
+    client.query("insert into public.app_users(id,role) values ($1,'doctor')", [
+      id.unassigned,
+    ]),
   );
   await rejectsState(
     asOwner((client) =>
@@ -901,7 +916,18 @@ test("private helpers use fixed search paths and no public/anonymous executable 
   for (const fn of functions) {
     assert.ok(fn.proconfig.includes('search_path=""'));
     assert.equal(fn.anon_execute, false);
-    assert.equal(fn.auth_execute, ["is_active_doctor", "has_active_session", "assert_lifecycle_doctor", "review_payload", "lifecycle_actor_id"].includes(fn.proname));
+    assert.equal(
+      fn.auth_execute,
+      [
+        "is_active_doctor",
+        "has_active_session",
+        "assert_lifecycle_doctor",
+        "review_payload",
+        "lifecycle_actor_id",
+        "doctor_clinic",
+        "patient_in_clinic",
+      ].includes(fn.proname),
+    );
   }
   await rejectsState(
     transaction("anon", null, (client) =>
@@ -928,44 +954,100 @@ test("private helpers use fixed search paths and no public/anonymous executable 
 });
 
 test("pharmacist reads only their active pharmacy, with inactive and unassigned identities denied", async () => {
-  const own = await asPharmacist(client => client.query("select id,name from public.pharmacies"));
-  assert.deepEqual(own.rows, [{ id: id.pharmacyA, name: "Fictional pharmacy A" }]);
+  const own = await asPharmacist((client) =>
+    client.query("select id,name from public.pharmacies"),
+  );
+  assert.deepEqual(own.rows, [
+    { id: id.pharmacyA, name: "Fictional pharmacy A" },
+  ]);
   for (const actor of [id.inactivePharmacist, id.unassigned]) {
-    const hidden = await transaction("authenticated", actor, client => client.query("select id from public.pharmacies"));
+    const hidden = await transaction("authenticated", actor, (client) =>
+      client.query("select id from public.pharmacies"),
+    );
     assert.equal(hidden.rowCount, 0);
   }
-  await asOwner(async client => {
-    await client.query("update public.pharmacies set is_active=false where id=$1", [id.pharmacyA]);
+  await asOwner(async (client) => {
+    await client.query(
+      "update public.pharmacies set is_active=false where id=$1",
+      [id.pharmacyA],
+    );
     await client.query("set local role authenticated");
-    await client.query("select set_config('request.jwt.claim.sub',$1,true)", [id.pharmacistA]);
-    assert.equal((await client.query("select id from public.pharmacies")).rowCount, 0);
+    await client.query("select set_config('request.jwt.claim.sub',$1,true)", [
+      id.pharmacistA,
+    ]);
+    assert.equal(
+      (await client.query("select id from public.pharmacies")).rowCount,
+      0,
+    );
   });
 });
 
 test("session check accepts only the caller's non-expired session and rejects revocation", async () => {
   const sessionId = randomUUID();
-  await asOwner(async client => {
-    await client.query("insert into auth.sessions(id,user_id) values ($1,$2)", [sessionId,id.doctor]);
+  await asOwner(async (client) => {
+    await client.query("insert into auth.sessions(id,user_id) values ($1,$2)", [
+      sessionId,
+      id.doctor,
+    ]);
     await client.query("set local role authenticated");
-    await client.query("select set_config('request.jwt.claim.sub',$1,true),set_config('request.jwt.claims',$2,true)",
-      [id.doctor,JSON.stringify({sub:id.doctor,session_id:sessionId})]);
-    assert.equal((await client.query("select public.has_active_session() as valid")).rows[0].valid,true);
-    await client.query("select set_config('request.jwt.claim.sub',$1,true)", [id.pharmacistA]);
-    assert.equal((await client.query("select public.has_active_session() as valid")).rows[0].valid,false);
+    await client.query(
+      "select set_config('request.jwt.claim.sub',$1,true),set_config('request.jwt.claims',$2,true)",
+      [id.doctor, JSON.stringify({ sub: id.doctor, session_id: sessionId })],
+    );
+    assert.equal(
+      (await client.query("select public.has_active_session() as valid"))
+        .rows[0].valid,
+      true,
+    );
+    await client.query("select set_config('request.jwt.claim.sub',$1,true)", [
+      id.pharmacistA,
+    ]);
+    assert.equal(
+      (await client.query("select public.has_active_session() as valid"))
+        .rows[0].valid,
+      false,
+    );
     await client.query("reset role");
-    await client.query("update auth.sessions set not_after=now()-interval '1 minute' where id=$1",[sessionId]);
+    await client.query(
+      "update auth.sessions set not_after=now()-interval '1 minute' where id=$1",
+      [sessionId],
+    );
     await client.query("set local role authenticated");
-    await client.query("select set_config('request.jwt.claim.sub',$1,true)",[id.doctor]);
-    assert.equal((await client.query("select public.has_active_session() as valid")).rows[0].valid,false);
+    await client.query("select set_config('request.jwt.claim.sub',$1,true)", [
+      id.doctor,
+    ]);
+    assert.equal(
+      (await client.query("select public.has_active_session() as valid"))
+        .rows[0].valid,
+      false,
+    );
     await client.query("reset role");
-    await client.query("delete from auth.sessions where id=$1",[sessionId]);
+    await client.query("delete from auth.sessions where id=$1", [sessionId]);
     await client.query("set local role authenticated");
-    assert.equal((await client.query("select public.has_active_session() as valid")).rows[0].valid,false);
+    assert.equal(
+      (await client.query("select public.has_active_session() as valid"))
+        .rows[0].valid,
+      false,
+    );
   });
-  await rejectsState(transaction("anon",null,client => client.query("select public.has_active_session()")),"42501");
-  await asDoctor(async client => {
-    assert.equal((await client.query("select public.has_active_session() as valid")).rows[0].valid,false);
-  });
+  await rejectsState(
+    transaction("anon", null, (client) =>
+      client.query("select public.has_active_session()"),
+    ),
+    "42501",
+  );
+  await transaction(
+    "authenticated",
+    id.doctor,
+    async (client) => {
+      assert.equal(
+        (await client.query("select public.has_active_session() as valid"))
+          .rows[0].valid,
+        false,
+      );
+    },
+    { session_id: randomUUID() },
+  );
 });
 
 test("concurrent database requests cannot dispense the same prescription twice", async () => {

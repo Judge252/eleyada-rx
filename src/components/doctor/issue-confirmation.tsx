@@ -1,9 +1,11 @@
 "use client";
+import { useI18n } from "@/lib/i18n/client";
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Review } from "@/lib/issuance/validation";
 import { lifecycleError } from "@/lib/issuance/validation";
 export function IssueConfirmation({ review }: { review: Review }) {
+  const { t } = useI18n();
   const router = useRouter();
   // Preserve this exact review, version and request ID on EVERY retry, including prop refresh.
   const [request] = useState(() => ({
@@ -51,9 +53,9 @@ export function IssueConfirmation({ review }: { review: Review }) {
   return (
     <section className="panel form-section no-print">
       <p>
-        الإصدار يثبت هذه النسخة المحفوظة نهائيًا. الصلاحية التجريبية سبعة أيام
-        من وقت قاعدة البيانات. لم تُعتمد سياسة الاستخدام الطبي أو التوقيع
-        القانوني بعد.
+        {t(
+          "الإصدار يثبت هذه النسخة المحفوظة نهائيًا. الصلاحية التجريبية سبعة أيام من وقت قاعدة البيانات. لم تُعتمد سياسة الاستخدام الطبي أو التوقيع القانوني بعد.",
+        )}{" "}
       </p>
       <label>
         <input
@@ -62,17 +64,18 @@ export function IssueConfirmation({ review }: { review: Review }) {
           disabled={pending}
           onChange={(e) => setConfirmed(e.target.checked)}
         />{" "}
-        راجعت بيانات المريض والأدوية وترتيبها، وأؤكد إصدار هذه النسخة المحفوظة
-        للاختبار الاصطناعي فقط.
+        {t(
+          "راجعت بيانات المريض والأدوية وترتيبها، وأؤكد إصدار هذه النسخة المحفوظة للاختبار الاصطناعي فقط.",
+        )}{" "}
       </label>
       <button
         className="button button-primary"
         disabled={!confirmed || pending}
         onClick={issue}
       >
-        {pending ? "جارٍ تأكيد الإصدار…" : "تأكيد الإصدار النهائي"}
+        {pending ? t("جارٍ تأكيد الإصدار…") : t("تأكيد الإصدار النهائي")}
       </button>
-      {message && <p role="alert">{message}</p>}
+      {message && <p role="alert">{t(message)}</p>}
     </section>
   );
 }

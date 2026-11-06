@@ -57,5 +57,8 @@ export const config = {
     "/api/auth/:path*",
     "/api/doctor/:path*",
     "/api/pharmacy/:path*",
+    "/api/experience/:path*",
+    "/",
+    "/portal",
   ],
 };

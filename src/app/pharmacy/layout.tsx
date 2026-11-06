@@ -7,5 +7,9 @@ export default async function PharmacyLayout({
   children: React.ReactNode;
 }) {
   const account = await requireRole("pharmacist");
-  return <AppShell role="pharmacy" account={account}>{children}</AppShell>;
+  return (
+    <AppShell role="pharmacy" account={account}>
+      {children}
+    </AppShell>
+  );
 }

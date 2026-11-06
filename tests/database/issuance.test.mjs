@@ -120,7 +120,7 @@ const counts = (c) =>
     `select jsonb_build_array((select count(*) from public.prescriptions),(select count(*) from public.audit_events),(select count(*) from vault.secrets),(select count(*) from rx_private.issuance_receipts),(select count(*) from rx_private.cancellation_receipts))`,
   );
 before(async () => {
-  db = await startTestDatabase();
+  db = await startTestDatabase({ legacyDoctorFixtures: true });
   for (const actor of ["doctor", "pharmacist", "inactive", "outsider"]) {
     await db.owner.query("insert into auth.users(id) values($1)", [ids[actor]]);
     await db.owner.query(

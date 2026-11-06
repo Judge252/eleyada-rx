@@ -1,3 +1,4 @@
+import { localizeMessages } from "@/lib/i18n/server";
 import { NextResponse } from "next/server";
 import { getAccount } from "@/lib/auth/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
@@ -10,8 +11,8 @@ import {
 import { revalidatePath } from "next/cache";
 
 export const dynamic = "force-dynamic";
-function response(body: unknown, status = 200) {
-  return NextResponse.json(body, {
+async function response(body: unknown, status = 200) {
+  return NextResponse.json(await localizeMessages(body), {
     status,
     headers: {
       "Cache-Control": "private, no-store, max-age=0",

@@ -82,6 +82,89 @@ export type Database = {
           },
         ];
       };
+      clinic_entitlements: {
+        Row: {
+          clinic_id: string;
+          ends_at: string | null;
+          is_active: boolean;
+          starts_at: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          clinic_id: string;
+          ends_at?: string | null;
+          is_active?: boolean;
+          starts_at?: string;
+        };
+        Update: {
+          clinic_id?: string;
+          ends_at?: string | null;
+          is_active?: boolean;
+          starts_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "clinic_entitlements_clinic_id_fkey";
+            columns: ["clinic_id"];
+            isOneToOne: true;
+            referencedRelation: "clinics";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      clinic_memberships: {
+        Row: {
+          clinic_id: string;
+          is_active: boolean;
+          user_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          clinic_id: string;
+          is_active?: boolean;
+          user_id: string;
+        };
+        Update: {
+          clinic_id?: string;
+          is_active?: boolean;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "clinic_memberships_clinic_id_fkey";
+            columns: ["clinic_id"];
+            isOneToOne: false;
+            referencedRelation: "clinics";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "clinic_memberships_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: true;
+            referencedRelation: "prescribers";
+            referencedColumns: ["user_id"];
+          },
+        ];
+      };
+      clinics: {
+        Row: {
+          id: string;
+          is_active: boolean;
+          name: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          id?: string;
+          is_active?: boolean;
+          name: string;
+        };
+        Update: {
+          id?: string;
+          is_active?: boolean;
+          name?: string;
+        };
+        Relationships: [];
+      };
       dispensations: {
         Row: {
           dispensed_at: string;
@@ -175,6 +258,33 @@ export type Database = {
           name?: string;
         };
         Relationships: [];
+      };
+      prescribers: {
+        Row: {
+          approved: boolean;
+          display_name: string;
+          user_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          approved?: boolean;
+          display_name: string;
+          user_id: string;
+        };
+        Update: {
+          approved?: boolean;
+          display_name?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "prescribers_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: true;
+            referencedRelation: "app_users";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       prescription_items: {
         Row: {
@@ -312,6 +422,10 @@ export type Database = {
       };
       get_doctor_issue_review: { Args: { p_id: string }; Returns: Json };
       get_doctor_lifecycle: { Args: { p_id: string }; Returns: Json };
+      get_prescriber_context: {
+        Args: Record<PropertyKey, never>;
+        Returns: Json;
+      };
       has_active_session: {
         Args: Record<PropertyKey, never>;
         Returns: boolean;
@@ -325,9 +439,27 @@ export type Database = {
         };
         Returns: Json;
       };
+      issue_form_prescription: {
+        Args: { p_confirmed: boolean; p_payload: Json; p_request_id: string };
+        Returns: Json;
+      };
       lookup_pharmacy_prescription: {
         Args: { p_reference: string };
         Returns: Json;
+      };
+      recover_dispensing_receipt: {
+        Args: { p_request_id: string };
+        Returns: Json;
+      };
+      recover_form_receipt: { Args: { p_request_id: string }; Returns: Json };
+      request_prescriber_access: {
+        Args: {
+          p_clinic?: string;
+          p_email: string;
+          p_name?: string;
+          p_operation: string;
+        };
+        Returns: boolean;
       };
       reveal_doctor_reference: { Args: { p_id: string }; Returns: Json };
       save_doctor_draft: {
@@ -339,6 +471,19 @@ export type Database = {
           p_prescription_id?: string;
           p_request_id: string;
         };
+        Returns: Json;
+      };
+      search_pharmacy_identity: {
+        Args: {
+          p_country: string;
+          p_identifier: string;
+          p_offset?: number;
+          p_type: string;
+        };
+        Returns: Json;
+      };
+      select_pharmacy_prescription: {
+        Args: { p_prescription_id: string; p_search_id: string };
         Returns: Json;
       };
     };

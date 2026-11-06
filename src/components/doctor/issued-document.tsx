@@ -1,4 +1,6 @@
 "use client";
+import { translate } from "@/lib/i18n/core";
+import { useI18n } from "@/lib/i18n/client";
 import { useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { useRouter } from "next/navigation";
@@ -11,14 +13,14 @@ import {
   type CancellationReason,
 } from "@/lib/issuance/validation";
 
-const date = (value: string | null) =>
+const date = (value: string | null, locale: "he" | "en" = "he") =>
   value
-    ? new Intl.DateTimeFormat("ar-EG", {
+    ? new Intl.DateTimeFormat(locale === "he" ? "he-IL" : "en-GB", {
         dateStyle: "medium",
         timeStyle: "long",
         timeZone: "Africa/Cairo",
       }).format(new Date(value))
-    : "غير متاح";
+    : translate("text_96", locale);
 const labels = {
   draft: "مسودة غير مُصدرة",
   issued: "مُصدرة — نسخة اختبار",
@@ -34,6 +36,7 @@ export function IssuedDocument({
   initial: Lifecycle | null;
   doctorEmail: string;
 }) {
+  const { t, locale } = useI18n();
   const router = useRouter();
   const [lifecycle, setLifecycle] = useState(initial);
   const [reference, setReference] = useState<string | null>(null);
@@ -124,7 +127,7 @@ export function IssuedDocument({
               }
             : old,
         );
-        setMessage("أُلغيت الوصفة. احتُفظ بتاريخها وسبب الإلغاء.");
+        setMessage(t("أُلغيت الوصفة. احتُفظ بتاريخها وسبب الإلغاء."));
         router.refresh();
       } else {
         flushSync(() => {
@@ -146,14 +149,15 @@ export function IssuedDocument({
       <section className="panel form-section no-print">
         {!lifecycle && (
           <p role="alert">
-            تعذّر التحقق من دورة الوصفة. يلزم تفعيل قاعدة البيانات أو استعادة
-            الاتصال قبل الطباعة أو الإلغاء.
+            {t(
+              "تعذّر التحقق من دورة الوصفة. يلزم تفعيل قاعدة البيانات أو استعادة الاتصال قبل الطباعة أو الإلغاء.",
+            )}{" "}
           </p>
         )}
         <p>
-          الرمز يظهر مؤقتًا فقط. الطباعة تسترجع الرمز نفسه وتتحقق من الحالة
-          مجددًا. حالة الصرف مستقلة عن حالة الإصدار؛ لا تستخدم نسخة الاختبار
-          للعلاج.
+          {t(
+            "الرمز يظهر مؤقتًا فقط. الطباعة تسترجع الرمز نفسه وتتحقق من الحالة مجددًا. حالة الصرف مستقلة عن حالة الإصدار؛ لا تستخدم نسخة الاختبار للعلاج.",
+          )}{" "}
         </p>
         <div className="draft-actions">
           <button
@@ -161,27 +165,27 @@ export function IssuedDocument({
             disabled={pending}
             onClick={() => perform("reveal")}
           >
-            إظهار الرمز المرجعي
+            {t("إظهار الرمز المرجعي")}{" "}
           </button>
           <button
             className="button button-primary"
             disabled={pending}
             onClick={() => perform("reveal", true)}
           >
-            استرجاع النسخة وطباعتها
+            {t("استرجاع النسخة وطباعتها")}{" "}
           </button>
           {reference && (
             <button
               className="button button-secondary"
               onClick={() => setReference(null)}
             >
-              إخفاء الرمز
+              {t("إخفاء الرمز")}{" "}
             </button>
           )}
         </div>
         {eligible && (
           <div className="field">
-            <label htmlFor="cancellation-reason">سبب الإلغاء</label>
+            <label htmlFor="cancellation-reason">{t("سبب الإلغاء")}</label>
             <select
               id="cancellation-reason"
               disabled={pending || cancelAttempted}
@@ -190,7 +194,7 @@ export function IssuedDocument({
             >
               {Object.entries(cancellationReasons).map(([value, label]) => (
                 <option key={value} value={value}>
-                  {label}
+                  {t(label)}
                 </option>
               ))}
             </select>
@@ -201,7 +205,7 @@ export function IssuedDocument({
                 checked={confirmed}
                 onChange={(e) => setConfirmed(e.target.checked)}
               />{" "}
-              أؤكد إلغاء هذه الوصفة نهائيًا؛ لن تصبح قابلة للصرف.
+              {t("أؤكد إلغاء هذه الوصفة نهائيًا؛ لن تصبح قابلة للصرف.")}{" "}
             </label>
             <button
               className="button button-danger"
@@ -209,25 +213,26 @@ export function IssuedDocument({
               onClick={() => perform("cancel")}
             >
               {pending
-                ? "جارٍ التحقق…"
+                ? t("جارٍ التحقق…")
                 : cancelAttempted
-                  ? "إعادة محاولة طلب الإلغاء نفسه"
-                  : "تأكيد إلغاء الوصفة"}
+                  ? t("إعادة محاولة طلب الإلغاء نفسه")
+                  : t("تأكيد إلغاء الوصفة")}
             </button>
           </div>
         )}
-        {message && <p role="status">{message}</p>}
+        {message && <p role="status">{t(message)}</p>}
       </section>
       <article
         className={`prescription-document panel issued-document ${reference ? "reference-ready" : ""}`}
       >
         {!!record.dispensations?.length && (
           <section className="document-warning">
-            <strong>صرف كامل مسجل — نسخة تاريخية</strong>
+            <strong>{t("صرف كامل مسجل — نسخة تاريخية")}</strong>
             <p>
-              الصيدلية:{" "}
-              {record.dispensations[0].pharmacy?.name ?? "صيدلية شريكة"} • وقت
-              الصرف: {date(record.dispensations[0].dispensed_at)}
+              {t("الصيدلية:")}{" "}
+              {record.dispensations[0].pharmacy?.name ?? t("صيدلية شريكة")}
+              {t("• وقت الصرف:")}{" "}
+              {date(record.dispensations[0].dispensed_at, locale)}
             </p>
           </section>
         )}
@@ -235,59 +240,71 @@ export function IssuedDocument({
           <Brand compact />
           <div className="document-label">
             <strong>
-              {lifecycle ? labels[lifecycle.status] : "الحالة غير متاحة"}
+              {lifecycle ? t(labels[lifecycle.status]) : t("الحالة غير متاحة")}
             </strong>
-            <span>نسخة تجريبية اصطناعية</span>
+            <span>{t("نسخة تجريبية اصطناعية")}</span>
           </div>
         </div>
         <div className="document-warning">
           <strong>
             {lifecycle?.dispensed
-              ? "مصروفة بالكامل — نسخة تاريخية"
+              ? t("مصروفة بالكامل — نسخة تاريخية")
               : lifecycle
-                ? labels[lifecycle.status]
-                : "لا تستخدم هذه النسخة"}
+                ? t(labels[lifecycle.status])
+                : t("لا تستخدم هذه النسخة")}
           </strong>
           <p>
-            اختبار برمجي فقط — غير معتمدة للاستخدام الطبي. الصلاحية التجريبية
-            سبعة أيام، وليست سياسة طبية أو قانونية معتمدة. هذا الاعتماد داخل
-            التطبيق لا يمثل توقيعًا رقميًا معترفًا به قانونًا.
+            {t(
+              "اختبار برمجي فقط — غير معتمدة للاستخدام الطبي. الصلاحية التجريبية سبعة أيام، وليست سياسة طبية أو قانونية معتمدة. هذا الاعتماد داخل التطبيق لا يمثل توقيعًا رقميًا معترفًا به قانونًا.",
+            )}{" "}
           </p>
         </div>
         <section className="document-patient">
           <div>
-            <span>اسم المريض</span>
+            <span>{t("اسم المريض")}</span>
             <strong>{record.patient.name}</strong>
           </div>
           <div>
-            <span>معرّف المريض</span>
-            <strong>{record.patient.patient_identifier || "غير مسجل"}</strong>
+            <span>{t("معرّف المريض")}</span>
+            <strong>
+              {record.patient.patient_identifier || t("غير مسجل")}
+            </strong>
           </div>
           <div>
-            <span>وقت الإصدار الأصلي</span>
-            <strong>{date(lifecycle?.issued_at ?? record.issued_at)}</strong>
+            <span>{t("وقت الإصدار الأصلي")}</span>
+            <strong>
+              {date(lifecycle?.issued_at ?? record.issued_at, locale)}
+            </strong>
           </div>
           <div>
-            <span>انتهاء الصلاحية</span>
-            <strong>{date(lifecycle?.expires_at ?? record.expires_at)}</strong>
+            <span>{t("انتهاء الصلاحية")}</span>
+            <strong>
+              {date(lifecycle?.expires_at ?? record.expires_at, locale)}
+            </strong>
           </div>
         </section>
         <section className="reference-section">
-          <h2>الرمز المرجعي</h2>
+          <h2>{t("الرمز المرجعي")}</h2>
           {reference ? (
             <strong className="secure-reference" dir="ltr">
               {reference}
             </strong>
           ) : (
             <p>
-              مخفي — استرجعه عبر الزر المصرّح به. الطباعة غير متاحة قبل
-              الاسترجاع.
+              {t(
+                "مخفي — استرجعه عبر الزر المصرّح به. الطباعة غير متاحة قبل الاسترجاع.",
+              )}{" "}
             </p>
           )}
-          <p>لا ترسل الرمز في الروابط. يحتفظ المريض بالنسخة الورقية بسرية.</p>
+          <p>
+            {t("لا ترسل الرمز في الروابط. يحتفظ المريض بالنسخة الورقية بسرية.")}
+          </p>
         </section>
         <section className="document-medications">
-          <h2>الأدوية ({record.items.length})</h2>
+          <h2>
+            {t("الأدوية (")}
+            {record.items.length})
+          </h2>
           {record.items.map((item, index) => (
             <div className="document-medication" key={index}>
               <div className="medication-name">
@@ -297,20 +314,20 @@ export function IssuedDocument({
               </div>
               <dl className="medication-properties">
                 {[
-                  ["الجرعة", item.dose],
-                  ["التكرار", item.frequency],
-                  ["المدة", item.duration],
-                  ["الكمية", item.quantity],
+                  [t("الجرعة"), item.dose],
+                  [t("التكرار"), item.frequency],
+                  [t("المدة"), item.duration],
+                  [t("الكمية"), item.quantity],
                 ].map(([label, value]) => (
-                  <div key={label}>
-                    <dt>{label}</dt>
+                  <div key={t(label)}>
+                    <dt>{t(label)}</dt>
                     <dd>{value}</dd>
                   </div>
                 ))}
               </dl>
               {item.special_instructions && (
                 <p className="medication-instructions">
-                  تعليمات خاصة: {item.special_instructions}
+                  {t("تعليمات خاصة:")} {item.special_instructions}
                 </p>
               )}
             </div>
@@ -319,37 +336,41 @@ export function IssuedDocument({
         {record.doctor_notes && (
           <section className="document-patient">
             <div>
-              <span>ملاحظات الطبيب</span>
+              <span>{t("ملاحظات الطبيب")}</span>
               <p>{record.doctor_notes}</p>
             </div>
           </section>
         )}
         {lifecycle?.cancellation && (
           <p className="document-warning">
-            أُلغيت في {date(lifecycle.cancellation.cancelled_at)} —{" "}
-            {cancellationReasons[lifecycle.cancellation.reason]}
+            {t("أُلغيت في")} {date(lifecycle.cancellation.cancelled_at, locale)}{" "}
+            — {t(cancellationReasons[lifecycle.cancellation.reason])}
           </p>
         )}
         <div className="document-bottom">
           <section>
-            <h2>حساب الطبيب</h2>
+            <h2>{t("حساب الطبيب")}</h2>
             <p dir="ltr">{doctorEmail}</p>
           </section>
           <section>
-            <strong>لا يوجد توقيع أو ختم قانوني</strong>
+            <strong>{t("لا يوجد توقيع أو ختم قانوني")}</strong>
             <p>
-              الاسم المهني ورقم التسجيل وتفاصيل العيادة المعتمدة لم تُستكمل بعد.
+              {t(
+                "الاسم المهني ورقم التسجيل وتفاصيل العيادة المعتمدة لم تُستكمل بعد.",
+              )}{" "}
             </p>
           </section>
         </div>
         <footer className="document-footer">
-          العيادة Rx • نسخة اختبار فقط • آخر تحقق من قاعدة البيانات:{" "}
-          {date(lifecycle?.database_time ?? null)} • حالة الصرف مستقلة عن دورة
-          الإصدار
+          {t("العيادة Rx • نسخة اختبار فقط • آخر تحقق من قاعدة البيانات:")}{" "}
+          {date(lifecycle?.database_time ?? null, locale)}
+          {t("• حالة الصرف مستقلة عن دورة الإصدار")}{" "}
         </footer>
       </article>
       <p className="print-blocked-message">
-        النسخة غير جاهزة للطباعة. استرجع الحالة والرمز عبر زر الطباعة أولًا.
+        {t(
+          "النسخة غير جاهزة للطباعة. استرجع الحالة والرمز عبر زر الطباعة أولًا.",
+        )}{" "}
       </p>
     </>
   );

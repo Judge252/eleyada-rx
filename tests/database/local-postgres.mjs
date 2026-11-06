@@ -17,7 +17,10 @@ async function freePort() {
   return port;
 }
 
-export async function startTestDatabase({ applyMigrations = true } = {}) {
+export async function startTestDatabase({
+  applyMigrations = true,
+  legacyDoctorFixtures = false,
+} = {}) {
   const localRoot = resolve(".local");
   await mkdir(localRoot, { recursive: true });
   const databaseDir = await mkdtemp(join(localRoot, "db-test-"));
@@ -70,7 +73,9 @@ export async function startTestDatabase({ applyMigrations = true } = {}) {
     await cluster.createDatabase(connection.database);
     const owner = await connect();
     await owner.query(await readFile("tests/database/bootstrap.sql", "utf8"));
-    await owner.query(await readFile("tests/database/vault-adapter.sql", "utf8"));
+    await owner.query(
+      await readFile("tests/database/vault-adapter.sql", "utf8"),
+    );
     const migrations = (await readdir("supabase/migrations"))
       .filter((name) => name.endsWith(".sql"))
       .sort();
@@ -82,6 +87,12 @@ export async function startTestDatabase({ applyMigrations = true } = {}) {
       for (const migration of migrations) {
         await owner.query(
           await readFile(join("supabase/migrations", migration), "utf8"),
+        );
+      }
+      if (legacyDoctorFixtures) {
+        // Isolated local fixture provisioning only; never part of application migrations.
+        await owner.query(
+          await readFile("tests/database/legacy-clinic-fixtures.sql", "utf8"),
         );
       }
     }

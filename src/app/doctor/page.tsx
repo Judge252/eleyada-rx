@@ -1,3 +1,5 @@
+import { LocalizedElement } from "@/lib/i18n/client";
+import { T } from "@/lib/i18n/client";
 import Link from "next/link";
 import { Plus, FileText, Clock3, UserRound, Info } from "lucide-react";
 import { PageHeading } from "@/components/ui";
@@ -57,38 +59,44 @@ export default async function DoctorDashboard({
             href="/doctor/prescriptions/new"
           >
             <Plus size={19} />
-            إنشاء مسودة
+            <T text="إنشاء مسودة" />
           </Link>
         }
       />
       {params.deleted === "1" && (
         <p className="review-notice" role="status">
-          حُذفت المسودة وأدويتها. احتُفظ بسجل المريض.
+          <T text="حُذفت المسودة وأدويتها. احتُفظ بسجل المريض." />
         </p>
       )}
-      <section className="stats-grid" aria-label="إحصاءات قاعدة البيانات">
+      <LocalizedElement
+        as="section"
+        className="stats-grid"
+        aria-label="إحصاءات قاعدة البيانات"
+      >
         {stats.map(({ label, value, icon: Icon, note }) => (
           <article className="stat-card" key={label}>
             <div className="stat-top">
-              <span>{label}</span>
+              <span>
+                <T text={label} />
+              </span>
               <div className="stat-icon icon-navy">
                 <Icon size={21} />
               </div>
             </div>
             <strong className="stat-value">
-              {value.toLocaleString("ar-EG")}
+              {value.toLocaleString("he-IL")}
             </strong>
-            <p>{note}</p>
+            <p>
+              <T text={note} />
+            </p>
           </article>
         ))}
-      </section>
+      </LocalizedElement>
       <PrescriptionTable rows={data.rows} total={data.total} page={page} />
       <section className="review-notice">
         <Info size={21} />
         <p>
-          حفظ المسودة لا يُصدرها. يلزم فتحها ومراجعتها وتأكيد الإصدار بشكل
-          منفصل. الصلاحية التجريبية سبعة أيام؛ غير معتمدة للاستخدام الطبي. صرف
-          الصيدلية المسجل يظهر منفصلًا عن حالة الإصدار.
+          <T text="حفظ المسودة لا يُصدرها. يلزم فتحها ومراجعتها وتأكيد الإصدار بشكل منفصل. الصلاحية التجريبية سبعة أيام؛ غير معتمدة للاستخدام الطبي. صرف الصيدلية المسجل يظهر منفصلًا عن حالة الإصدار." />
         </p>
       </section>
     </>

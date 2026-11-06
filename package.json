@@ -21,6 +21,9 @@
     "test:pharmacy-ui": "node tests/ui/pharmacy-ui.mjs",
     "test:pharmacy-validation": "node --test tests/pharmacy-validation.test.mjs",
     "test:pharmacy-db": "node --test --test-concurrency=1 tests/database/pharmacy.test.mjs tests/database/pharmacy-http.test.mjs",
+    "test:redesign": "node --test tests/experience-validation.test.mjs",
+    "test:localization": "node --test tests/localization.test.mjs",
+    "test:redesign-db": "node --test --test-concurrency=1 tests/database/redesign.test.mjs tests/database/redesign-http.test.mjs",
     "test:clinical-db": "node --test --test-concurrency=1 tests/database/foundation.test.mjs tests/database/drafts.test.mjs tests/database/issuance.test.mjs tests/database/issuance-owner.test.mjs tests/database/native-auth-compatibility.test.mjs tests/database/effective-timeout.test.mjs tests/database/pharmacy.test.mjs tests/database/pharmacy-http.test.mjs",
     "db:types": "node scripts/database-types.mjs",
     "db:types:check": "node scripts/database-types.mjs --check",
@@ -30,6 +33,7 @@
   },
   "dependencies": {
     "@fontsource-variable/noto-sans-arabic": "^5.2.8",
+    "@fontsource-variable/noto-sans-hebrew": "^5.3.0",
     "@supabase/ssr": "0.12.7",
     "@supabase/supabase-js": "2.118.0",
     "lucide-react": "^0.468.0",

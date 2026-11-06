@@ -7,5 +7,9 @@ export default async function DoctorLayout({
   children: React.ReactNode;
 }) {
   const account = await requireRole("doctor");
-  return <AppShell role="doctor" account={account}>{children}</AppShell>;
+  return (
+    <AppShell role="doctor" account={account}>
+      {children}
+    </AppShell>
+  );
 }

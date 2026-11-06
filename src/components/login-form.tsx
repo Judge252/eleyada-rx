@@ -1,5 +1,5 @@
 "use client";
-
+import { useI18n, LanguageSwitcher } from "@/lib/i18n/client";
 import { useActionState, useState, useRef, type FormEvent } from "react";
 import {
   FileText,
@@ -13,7 +13,12 @@ import {
 import { Brand, Button, Field } from "@/components/ui";
 import { signIn } from "@/lib/auth/actions";
 
-export function LoginForm({ accessDenied = false }: { accessDenied?: boolean }) {
+export function LoginForm({
+  accessDenied = false,
+}: {
+  accessDenied?: boolean;
+}) {
+  const { t } = useI18n();
   const [state, action, pending] = useActionState(signIn, { message: "" });
   const [localErrors, setErrors] = useState<Record<string, string>>({});
   const errors = { ...state.errors, ...localErrors };
@@ -28,9 +33,9 @@ export function LoginForm({ accessDenied = false }: { accessDenied?: boolean }) 
         String(values.get("email") ?? "").trim(),
       )
     )
-      nextErrors.email = "أدخل بريدًا إلكترونيًا بصيغة صحيحة.";
+      nextErrors.email = t("أدخل بريدًا إلكترونيًا بصيغة صحيحة.");
     if (!String(values.get("password") ?? ""))
-      nextErrors.password = "أدخل كلمة المرور.";
+      nextErrors.password = t("أدخل كلمة المرور.");
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length) {
       event.preventDefault();
@@ -46,10 +51,10 @@ export function LoginForm({ accessDenied = false }: { accessDenied?: boolean }) 
     <main className="login-page">
       <section className="login-story">
         <div className="story-top">
-          <span dir="ltr">Al-Eyada Rx</span>
+          <span dir="ltr">Clinic RX</span>
           <span className="story-pilot">
             <span />
-            تجربة خاصة
+            {t("تجربة خاصة")}{" "}
           </span>
         </div>
         <div className="story-body">
@@ -57,15 +62,15 @@ export function LoginForm({ accessDenied = false }: { accessDenied?: boolean }) 
             <FileText size={37} strokeWidth={1.5} />
             <span>Rx</span>
           </div>
-          <p className="story-eyebrow">العيادة • الوصفات الرقمية</p>
+          <p className="story-eyebrow">{t("العيادة • الوصفات الرقمية")}</p>
           <h2>
-            رعاية تبدأ بوصفة،
-            <br />
-            وثقة في كل خطوة.
+            {t("رعاية تبدأ بوصفة،")} <br />
+            {t("وثقة في كل خطوة.")}{" "}
           </h2>
           <p className="story-description">
-            مساحة واحدة لتنظيم وصفات العيادة، ومراجعتها والتحقق منها لدى
-            الصيدليات الشريكة.
+            {t(
+              "مساحة واحدة لتنظيم وصفات العيادة، ومراجعتها والتحقق منها لدى الصيدليات الشريكة.",
+            )}{" "}
           </p>
           <div className="story-steps">
             <div>
@@ -73,8 +78,8 @@ export function LoginForm({ accessDenied = false }: { accessDenied?: boolean }) 
                 <FileText size={20} />
               </span>
               <p>
-                <strong>وصفة واضحة</strong>
-                <small>تفاصيل منظمة يسهل الرجوع إليها</small>
+                <strong>{t("وصفة واضحة")}</strong>
+                <small>{t("تفاصيل منظمة يسهل الرجوع إليها")}</small>
               </p>
             </div>
             <div>
@@ -82,8 +87,8 @@ export function LoginForm({ accessDenied = false }: { accessDenied?: boolean }) 
                 <ScanLine size={20} />
               </span>
               <p>
-                <strong>تحقق لدى الصيدلية</strong>
-                <small>عرض أصل الوصفة دون تعديل بياناتها</small>
+                <strong>{t("تحقق لدى الصيدلية")}</strong>
+                <small>{t("عرض أصل الوصفة دون تعديل بياناتها")}</small>
               </p>
             </div>
             <div>
@@ -91,29 +96,36 @@ export function LoginForm({ accessDenied = false }: { accessDenied?: boolean }) 
                 <ClipboardCheck size={20} />
               </span>
               <p>
-                <strong>متابعة عملية الصرف</strong>
-                <small>ضمن نطاق الصيدليات المشاركة مستقبلًا</small>
+                <strong>{t("متابعة عملية الصرف")}</strong>
+                <small>{t("ضمن نطاق الصيدليات المشاركة مستقبلًا")}</small>
               </p>
             </div>
           </div>
         </div>
         <p className="story-footer">
-          تصوّر لسير العمل المستقبلي • الميزات غير مُفعّلة في هذه المرحلة
+          {t(
+            "تصوّر لسير العمل المستقبلي • الميزات غير مُفعّلة في هذه المرحلة",
+          )}{" "}
         </p>
       </section>
       <section className="login-form-side">
         <div className="login-inner">
+          <LanguageSwitcher />
           <Brand />
           <div className="login-title">
-            <div className="eyebrow">مرحبًا بك في العيادة</div>
-            <h1>تسجيل الدخول</h1>
-            <p>واجهة دخول الطبيب والصيدليات الشريكة.</p>
+            <div className="eyebrow">{t("مرحبًا بك في العيادة")}</div>
+            <h1>{t("تسجيل الدخول")}</h1>
+            <p>{t("واجهة دخول الطبيب والصيدليات الشريكة.")}</p>
           </div>
           <div className="login-demo">
             <FlaskConical size={19} />
             <p>
-              <strong>دخول مخصص للحسابات المعتمدة</strong>
-              <span>إنشاء الحسابات لدى مسؤول العيادة فقط. الوصفات والصرف ما زالا تجريبيين.</span>
+              <strong>{t("دخول مخصص للحسابات المعتمدة")}</strong>
+              <span>
+                {t(
+                  "إنشاء الحسابات لدى مسؤول العيادة فقط. الوصفات والصرف ما زالا تجريبيين.",
+                )}
+              </span>
             </p>
           </div>
           <form
@@ -124,7 +136,11 @@ export function LoginForm({ accessDenied = false }: { accessDenied?: boolean }) 
             aria-busy={pending}
             className="login-form"
           >
-            <Field id="email" label="البريد الإلكتروني" error={errors.email}>
+            <Field
+              id="email"
+              label={t("البريد الإلكتروني")}
+              error={errors.email}
+            >
               <input
                 className="input"
                 id="email"
@@ -140,7 +156,7 @@ export function LoginForm({ accessDenied = false }: { accessDenied?: boolean }) 
             </Field>
             <Field
               id="password"
-              label="كلمة المرور"
+              label={t("كلمة المرور")}
               error={errors.password}
             >
               <div className="password-input">
@@ -160,7 +176,9 @@ export function LoginForm({ accessDenied = false }: { accessDenied?: boolean }) 
                 <button
                   type="button"
                   aria-label={
-                    showPassword ? "إخفاء كلمة المرور" : "إظهار كلمة المرور"
+                    showPassword
+                      ? t("إخفاء كلمة المرور")
+                      : t("إظهار كلمة المرور")
                   }
                   aria-pressed={showPassword}
                   onClick={() => setShowPassword(!showPassword)}
@@ -171,16 +189,21 @@ export function LoginForm({ accessDenied = false }: { accessDenied?: boolean }) 
             </Field>
             <Button type="submit" className="login-submit" disabled={pending}>
               <LogIn size={18} />
-              {pending ? "جارٍ تسجيل الدخول…" : "تسجيل الدخول"}
+              {pending ? t("جارٍ تسجيل الدخول…") : t("تسجيل الدخول")}
             </Button>
             {(state.message || accessDenied) && (
               <p className="feedback-message" role="alert">
-                {state.message || "سجّل الدخول بحساب معتمد ونشط للوصول إلى هذه الصفحة."}
+                {t(
+                  state.message ||
+                    "سجّل الدخول بحساب معتمد ونشط للوصول إلى هذه الصفحة.",
+                )}
               </p>
             )}
           </form>
           <p className="login-footer">
-            لا تُدخل بيانات مرضى حقيقيين. لاستعادة الوصول، تواصل مع مسؤول العيادة.
+            {t(
+              "لا تُدخل بيانات مرضى حقيقيين. لاستعادة الوصول، تواصل مع مسؤول العيادة.",
+            )}{" "}
           </p>
         </div>
       </section>

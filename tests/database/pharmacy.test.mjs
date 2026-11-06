@@ -168,7 +168,7 @@ async function waitLock(c) {
   assert.fail("Bounded lock wait not observed");
 }
 before(async () => {
-  db = await startTestDatabase();
+  db = await startTestDatabase({ legacyDoctorFixtures: true });
   await db.owner.query(
     "insert into public.pharmacies(id,name) values($1,'SYNTHETIC ONE'),($2,'SYNTHETIC TWO')",
     [ids.pharmacy, ids.otherPharmacy],

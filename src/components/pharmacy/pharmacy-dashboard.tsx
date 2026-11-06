@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/lib/i18n/client";
 import {
   useCallback,
   useEffect,
@@ -13,13 +14,14 @@ import {
   type PharmacyInput,
   type PharmacyResult,
 } from "@/lib/pharmacy/validation";
-const time = (value: string) =>
-  new Intl.DateTimeFormat("ar-EG", {
+const time = (value: string, locale: "he" | "en" = "he") =>
+  new Intl.DateTimeFormat(locale === "he" ? "he-IL" : "en-GB", {
     dateStyle: "medium",
     timeStyle: "long",
     timeZone: "Africa/Cairo",
   }).format(new Date(value));
 export function PharmacyDashboard({ pharmacyName }: { pharmacyName: string }) {
+  const { t, locale } = useI18n();
   const [query, setQuery] = useState("");
   const [result, setResult] = useState<PharmacyResult | null>(null);
   const [message, setMessage] = useState("");
@@ -67,12 +69,12 @@ export function PharmacyDashboard({ pharmacyName }: { pharmacyName: string }) {
     const timer = setTimeout(
       () => {
         clear();
-        setMessage("انتهت مهلة المراجعة. أعد البحث قبل التأكيد.");
+        setMessage(t("انتهت مهلة المراجعة. أعد البحث قبل التأكيد."));
       },
       Math.min(delay, 2147483647),
     );
     return () => clearTimeout(timer);
-  }, [result, clear]);
+  }, [result, clear, t]);
   async function perform(input: PharmacyInput) {
     if (busy.current) return;
     busy.current = true;
@@ -132,27 +134,31 @@ export function PharmacyDashboard({ pharmacyName }: { pharmacyName: string }) {
   return (
     <>
       <PageHeading
-        eyebrow="مساحة الصيدلي"
-        title="التحقق من وصفة وصرفها"
-        description="أدخل الرمز المقدم من المريض. الصرف كامل فقط بعد مراجعة الهوية وجميع الأدوية."
+        eyebrow={t("مساحة الصيدلي")}
+        title={t("التحقق من وصفة وصرفها")}
+        description={t(
+          "أدخل الرمز المقدم من المريض. الصرف كامل فقط بعد مراجعة الهوية وجميع الأدوية.",
+        )}
       />
       <div className="pharmacy-account">
         <Store size={24} />
         <div>
           <strong>{pharmacyName}</strong>
-          <p>حساب صيدلي معتمد • صرف كامل مسجل</p>
+          <p>{t("حساب صيدلي معتمد • صرف كامل مسجل")}</p>
         </div>
       </div>
       <section className="panel code-search-panel">
-        <h2>البحث بالرمز المرجعي</h2>
-        <p>الرمز سري. لا تضعه في رابط ولا تشاركه خارج التحقق المصرح به.</p>
+        <h2>{t("البحث بالرمز المرجعي")}</h2>
+        <p>
+          {t("الرمز سري. لا تضعه في رابط ولا تشاركه خارج التحقق المصرح به.")}
+        </p>
         <form
           className="code-search-form"
           autoComplete="off"
           noValidate
           onSubmit={search}
         >
-          <Field id="reference-code" label="الرمز المرجعي">
+          <Field id="reference-code" label={t("الرمز المرجعي")}>
             <input
               id="reference-code"
               className="input code-input"
@@ -167,56 +173,61 @@ export function PharmacyDashboard({ pharmacyName }: { pharmacyName: string }) {
           </Field>
           <Button type="submit" disabled={pending || !query.trim()}>
             <Search size={18} />
-            {pending ? "جارٍ التحقق…" : "بحث عن الوصفة"}
+            {pending ? t("جارٍ التحقق…") : t("بحث عن الوصفة")}
           </Button>
         </form>
         <p>
-          عند إعادة التحميل أو الدخول من جديد، أعد إدخال الرمز للتحقق من الحالة
-          الحالية.
+          {t(
+            "عند إعادة التحميل أو الدخول من جديد، أعد إدخال الرمز للتحقق من الحالة الحالية.",
+          )}{" "}
         </p>
       </section>
       {message && (
         <p className="feedback-message" role="alert">
-          {message}
+          {t(message)}
         </p>
       )}
       {!result && (
         <section className="pharmacy-empty">
-          <h2>لا توجد وصفة معروضة</h2>
-          <p>لن تظهر بيانات المريض إلا بعد بحث مصرح به برمز صحيح.</p>
+          <h2>{t("لا توجد وصفة معروضة")}</h2>
+          <p>{t("لن تظهر بيانات المريض إلا بعد بحث مصرح به برمز صحيح.")}</p>
         </section>
       )}
       {result?.state === "eligible" && (
         <div className="pharmacy-result">
           <section className="panel form-section">
-            <h2>مراجعة الوصفة</h2>
+            <h2>{t("مراجعة الوصفة")}</h2>
             <p className="readonly-note">
               <LockKeyhole size={16} />
-              الأدوية والكميات للقراءة فقط. الأهلية يعاد التحقق منها عند تأكيد
-              الصرف.
+              {t(
+                "الأدوية والكميات للقراءة فقط. الأهلية يعاد التحقق منها عند تأكيد الصرف.",
+              )}{" "}
             </p>
             <div className="document-patient">
               <div>
-                <span>اسم المريض</span>
+                <span>{t("اسم المريض")}</span>
                 <strong>{result.patient.name}</strong>
               </div>
               <div>
-                <span>معرّف المريض</span>
+                <span>{t("معرّف المريض")}</span>
                 <strong>
                   {result.patient.patient_identifier ||
-                    "غير مسجل — تحقق من الهوية مباشرة"}
+                    t("غير مسجل — تحقق من الهوية مباشرة")}
                 </strong>
               </div>
               <div>
-                <span>الإصدار</span>
-                <strong>{time(result.issued_at)}</strong>
+                <span>{t("الإصدار")}</span>
+                <strong>{time(result.issued_at, locale)}</strong>
               </div>
               <div>
-                <span>انتهاء الصلاحية</span>
-                <strong>{time(result.expires_at)}</strong>
+                <span>{t("انتهاء الصلاحية")}</span>
+                <strong>{time(result.expires_at, locale)}</strong>
               </div>
             </div>
-            <h3>الأدوية ({result.items.length})</h3>
+            <h3>
+              {t("الأدوية (")}
+              {result.items.length})
+            </h3>
             {result.items.map((item, index) => (
               <div className="document-medication" key={index}>
                 <div className="medication-name">
@@ -226,13 +237,13 @@ export function PharmacyDashboard({ pharmacyName }: { pharmacyName: string }) {
                 </div>
                 <dl className="medication-properties">
                   {[
-                    ["الجرعة", item.dose],
-                    ["التكرار", item.frequency],
-                    ["المدة", item.duration],
-                    ["الكمية", item.quantity],
+                    [t("الجرعة"), item.dose],
+                    [t("التكرار"), item.frequency],
+                    [t("المدة"), item.duration],
+                    [t("الكمية"), item.quantity],
                   ].map(([label, value]) => (
-                    <div key={label}>
-                      <dt>{label}</dt>
+                    <div key={t(label)}>
+                      <dt>{t(label)}</dt>
                       <dd>{value}</dd>
                     </div>
                   ))}
@@ -244,7 +255,7 @@ export function PharmacyDashboard({ pharmacyName }: { pharmacyName: string }) {
             ))}
           </section>
           <section className="panel dispensing-panel">
-            <h2>صرف جميع الأدوية</h2>
+            <h2>{t("صرف جميع الأدوية")}</h2>
             <label className="identity-check">
               <input
                 type="checkbox"
@@ -256,7 +267,7 @@ export function PharmacyDashboard({ pharmacyName }: { pharmacyName: string }) {
                   setFull(false);
                 }}
               />
-              <span>راجعت هوية المريض ومطابقتها للوصفة المعروضة.</span>
+              <span>{t("راجعت هوية المريض ومطابقتها للوصفة المعروضة.")}</span>
             </label>
             {!confirming ? (
               <Button
@@ -264,14 +275,15 @@ export function PharmacyDashboard({ pharmacyName }: { pharmacyName: string }) {
                 onClick={() => setConfirming(true)}
               >
                 <ClipboardCheck size={18} />
-                متابعة تأكيد الصرف الكامل
+                {t("متابعة تأكيد الصرف الكامل")}{" "}
               </Button>
             ) : (
               <div className="confirmation-box">
-                <h3>تأكيد صرف الوصفة بالكامل؟</h3>
+                <h3>{t("تأكيد صرف الوصفة بالكامل؟")}</h3>
                 <p>
-                  سيُسجل الصرف باسم حسابك وصيدليتك، ولا يمكن تعديله أو تكراره.
-                  لا يوجد صرف جزئي.
+                  {t(
+                    "سيُسجل الصرف باسم حسابك وصيدليتك، ولا يمكن تعديله أو تكراره. لا يوجد صرف جزئي.",
+                  )}{" "}
                 </p>
                 <label className="identity-check">
                   <input
@@ -281,7 +293,9 @@ export function PharmacyDashboard({ pharmacyName }: { pharmacyName: string }) {
                     onChange={(e) => setFull(e.target.checked)}
                   />
                   <span>
-                    أؤكد صرف جميع الأدوية والكميات المعروضة دون تعديل.
+                    {t(
+                      "أؤكد صرف جميع الأدوية والكميات المعروضة دون تعديل.",
+                    )}{" "}
                   </span>
                 </label>
                 <Button
@@ -289,10 +303,10 @@ export function PharmacyDashboard({ pharmacyName }: { pharmacyName: string }) {
                   onClick={dispense}
                 >
                   {pending
-                    ? "جارٍ تأكيد الصرف…"
+                    ? t("جارٍ تأكيد الصرف…")
                     : attempted
-                      ? "إعادة محاولة طلب الصرف نفسه"
-                      : "تأكيد الصرف الكامل"}
+                      ? t("إعادة محاولة طلب الصرف نفسه")
+                      : t("تأكيد الصرف الكامل")}
                 </Button>
               </div>
             )}
@@ -311,15 +325,17 @@ export function PharmacyDashboard({ pharmacyName }: { pharmacyName: string }) {
           <div>
             <h2>
               {result.state === "dispensed"
-                ? "الوصفة مصروفة بالكامل"
+                ? t("الوصفة مصروفة بالكامل")
                 : result.state === "cancelled"
-                  ? "الوصفة ملغاة — غير صالحة للصرف"
-                  : "الوصفة منتهية الصلاحية — غير صالحة للصرف"}
+                  ? t("الوصفة ملغاة — غير صالحة للصرف")
+                  : t("الوصفة منتهية الصلاحية — غير صالحة للصرف")}
             </h2>
             {result.state === "dispensed" && (
-              <p>وقت الصرف المسجل: {time(result.dispensed_at)}</p>
+              <p>
+                {t("وقت الصرف المسجل:")} {time(result.dispensed_at, locale)}
+              </p>
             )}
-            <p>لا يمكن تسجيل صرف إضافي لهذه الوصفة.</p>
+            <p>{t("لا يمكن تسجيل صرف إضافي لهذه الوصفة.")}</p>
           </div>
         </section>
       )}
@@ -332,7 +348,7 @@ export function PharmacyDashboard({ pharmacyName }: { pharmacyName: string }) {
             setMessage("");
           }}
         >
-          بدء بحث جديد وإخفاء البيانات
+          {t("بدء بحث جديد وإخفاء البيانات")}{" "}
         </Button>
       )}
     </>

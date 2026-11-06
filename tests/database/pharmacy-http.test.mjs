@@ -9,7 +9,7 @@ sanitizeTestErrors("PHARMACY_HTTP");
 test("real local PostgREST across two instances commits404 409 429 budgets with no-store and SDK PT409", async () => {
   let db, first, second;
   try {
-    db = await startTestDatabase();
+    db = await startTestDatabase({ legacyDoctorFixtures: true });
     const actor = randomUUID(),
       session = randomUUID(),
       pharmacy = randomUUID(),

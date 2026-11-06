@@ -147,8 +147,19 @@ test("host-matching auth ownership reproduces original denial; additive correcti
     await c.query("commit");
     await c.query("set role local_migration_owner");
     await c.query(await readFile(correctionPath, "utf8"));
-    await c.query(await readFile("supabase/migrations/20261022173000_pharmacy_full_dispensing.sql", "utf8"));
-    assert.equal(await scalar(c,"select has_schema_privilege('rx_pharmacy_executor','auth','USAGE')"),false);
+    await c.query(
+      await readFile(
+        "supabase/migrations/20261022173000_pharmacy_full_dispensing.sql",
+        "utf8",
+      ),
+    );
+    assert.equal(
+      await scalar(
+        c,
+        "select has_schema_privilege('rx_pharmacy_executor','auth','USAGE')",
+      ),
+      false,
+    );
     assert.equal(
       await scalar(c, "select current_user"),
       "local_migration_owner",
@@ -222,18 +233,119 @@ test("host-matching auth ownership reproduces original denial; additive correcti
     // Exercise the new workflow with platform-owned Auth and no grant-option delegation.
     const rx = await draft();
     const issuedRx = await issue(rx);
-    const pharmacist = randomUUID(), pharmacy = randomUUID(), pharmacistSession = randomUUID();
+    const pharmacist = randomUUID(),
+      pharmacy = randomUUID(),
+      pharmacistSession = randomUUID();
     await c.query("reset role");
-    await c.query("insert into auth.users(id) values($1)",[pharmacist]);
-    await c.query("insert into auth.sessions(id,user_id) values($1,$2)",[pharmacistSession,pharmacist]);
-    await c.query("insert into public.pharmacies(id,name) values($1,'SYNTHETIC NATIVE OWNER')",[pharmacy]);
-    await c.query("insert into public.app_users(id,role,pharmacy_id) values($1,'pharmacist',$2)",[pharmacist,pharmacy]);
+    await c.query("insert into auth.users(id) values($1)", [pharmacist]);
+    await c.query("insert into auth.sessions(id,user_id) values($1,$2)", [
+      pharmacistSession,
+      pharmacist,
+    ]);
+    await c.query(
+      "insert into public.pharmacies(id,name) values($1,'SYNTHETIC NATIVE OWNER')",
+      [pharmacy],
+    );
+    await c.query(
+      "insert into public.app_users(id,role,pharmacy_id) values($1,'pharmacist',$2)",
+      [pharmacist, pharmacy],
+    );
     await c.query("set local role authenticated");
-    await c.query("select set_config('request.jwt.claim.sub','',true),set_config('request.jwt.claims',$1,true)",[JSON.stringify({sub:pharmacist,role:"authenticated",session_id:pharmacistSession})]);
-    const found = await scalar(c,"select public.lookup_pharmacy_prescription($1)",[issuedRx.reference]);
-    assert.equal(found.state,"eligible");
-    const full = await scalar(c,"select public.dispense_pharmacy_prescription($1,$2,$3,true,true)",[found.lookup_id,rx.id,randomUUID()]);
-    assert.equal(full.state,"dispensed");
+    await c.query(
+      "select set_config('request.jwt.claim.sub','',true),set_config('request.jwt.claims',$1,true)",
+      [
+        JSON.stringify({
+          sub: pharmacist,
+          role: "authenticated",
+          session_id: pharmacistSession,
+        }),
+      ],
+    );
+    const found = await scalar(
+      c,
+      "select public.lookup_pharmacy_prescription($1)",
+      [issuedRx.reference],
+    );
+    assert.equal(found.state, "eligible");
+    const full = await scalar(
+      c,
+      "select public.dispense_pharmacy_prescription($1,$2,$3,true,true)",
+      [found.lookup_id, rx.id, randomUUID()],
+    );
+    assert.equal(full.state, "dispensed");
+    await c.query("rollback");
+    // The redesign must work under the same platform-owned Auth boundary.
+    await c.query("begin");
+    await actor();
+    const historical = await draft();
+    await issue(historical);
+    await c.query("commit");
+    const historicalFingerprint = await scalar(
+      c,
+      "select md5(to_jsonb(p)::text) from public.prescriptions p where id=$1",
+      [historical.id],
+    );
+    await c.query("set role local_migration_owner");
+    await c.query(
+      await readFile(
+        "supabase/migrations/20261106120000_multiclinic_form.sql",
+        "utf8",
+      ),
+    );
+    assert.equal(
+      await scalar(c, "select current_user"),
+      "local_migration_owner",
+    );
+    assert.equal(
+      await scalar(
+        c,
+        "select has_schema_privilege('rx_form_executor','auth','USAGE')",
+      ),
+      false,
+    );
+    assert.equal(
+      await scalar(
+        c,
+        "select pg_has_role('local_migration_owner','rx_form_executor','SET')",
+      ),
+      false,
+    );
+    await c.query("reset role");
+    assert.equal(
+      await scalar(
+        c,
+        "select md5(to_jsonb(p)::text) from public.prescriptions p where id=$1",
+        [historical.id],
+      ),
+      historicalFingerprint,
+    );
+    assert.equal(
+      await scalar(
+        c,
+        "select count(*)::integer from rx_private.patient_identities",
+      ),
+      0,
+    );
+    await c.query("update public.clinic_entitlements set is_active=true");
+    await c.query("begin");
+    await actor();
+    const form = await scalar(
+      c,
+      "select public.issue_form_prescription($1,$2,true)",
+      [
+        randomUUID(),
+        {
+          name: "SYNTHETIC NATIVE",
+          country: "EG",
+          type: "national_id",
+          identifier: "00001234",
+          notes: "",
+          items: [med],
+        },
+      ],
+    );
+    assert.equal(form.status, "issued");
+    assert.equal(form.doctor_id, doctor);
     await c.query("rollback");
   } finally {
     await c.query("rollback");

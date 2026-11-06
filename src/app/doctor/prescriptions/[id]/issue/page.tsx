@@ -1,3 +1,4 @@
+import { T } from "@/lib/i18n/client";
 import { notFound } from "next/navigation";
 import { requireRole } from "@/lib/auth/server";
 import { UUID } from "@/lib/drafts/validation";
@@ -16,7 +17,9 @@ export default async function IssuePage({
   const { review, message } = await getIssueReview(id);
   return (
     <>
-      <BackLink href={`/doctor/prescriptions/${id}`}>العودة إلى السجل</BackLink>
+      <BackLink href={`/doctor/prescriptions/${id}`}>
+        <T text="العودة إلى السجل" />
+      </BackLink>
       <PageHeading
         eyebrow="نسخة محفوظة فقط"
         title="مراجعة قبل الإصدار"
@@ -35,7 +38,7 @@ export default async function IssuePage({
         </>
       ) : (
         <p className="review-notice" role="alert">
-          {message}
+          <T text={message} />
         </p>
       )}
     </>

@@ -1,5 +1,5 @@
 "use client";
-
+import { useI18n, LanguageSwitcher } from "@/lib/i18n/client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -26,35 +26,43 @@ export function AppShell({
   account: Account;
   children: ReactNode;
 }) {
+  const { t } = useI18n();
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const doctor = role === "doctor";
   const navigation = doctor
     ? [
-        { href: "/doctor", label: "نظرة عامة", icon: LayoutDashboard },
+        { href: "/doctor", label: t("نظرة عامة"), icon: LayoutDashboard },
         {
           href: "/doctor#prescriptions",
-          label: "السجلات المحفوظة",
+          label: t("السجلات المحفوظة"),
           icon: ClipboardList,
         },
         {
           href: "/doctor/prescriptions/new",
-          label: "وصفة جديدة",
+          label: t("وصفة جديدة"),
           icon: FilePlus2,
         },
       ]
-    : [{ href: "/pharmacy", label: "التحقق من وصفة", icon: LayoutDashboard }];
+    : [
+        {
+          href: "/pharmacy",
+          label: t("التحقق من وصفة"),
+          icon: LayoutDashboard,
+        },
+      ];
 
   return (
     <div className="app-shell">
-      <SessionGuard role={account.role} />
+      <SessionGuard role={account.role} identity={account.id} />
       <a className="skip-link" href="#main-content">
-        تخطي إلى المحتوى
+        {t("تخطي إلى المحتوى")}{" "}
       </a>
       <aside className="sidebar">
         <div className="sidebar-brand">
           <Brand compact />
-          <span className="pilot-label">النسخة التجريبية الخاصة</span>
+          <LanguageSwitcher />
+          <span className="pilot-label">{t("النسخة التجريبية الخاصة")}</span>
         </div>
         <button
           className="mobile-menu button"
@@ -64,14 +72,16 @@ export function AppShell({
           onClick={() => setOpen(!open)}
         >
           {open ? <PanelRightClose size={20} /> : <PanelRightOpen size={20} />}
-          القائمة
+          {t("القائمة")}{" "}
         </button>
         <div
           className={`sidebar-content ${open ? "is-open" : ""}`}
           id="sidebar-links"
         >
-          <p className="nav-caption">مساحة {doctor ? "الطبيب" : "الصيدلي"}</p>
-          <nav aria-label="التنقل الرئيسي">
+          <p className="nav-caption">
+            {t("مساحة")} {doctor ? t("الطبيب") : t("الصيدلي")}
+          </p>
+          <nav aria-label={t("التنقل الرئيسي")}>
             {navigation.map(({ href, label, icon: Icon }) => {
               const active = !href.includes("#") && pathname === href;
               return (
@@ -83,7 +93,7 @@ export function AppShell({
                   onClick={() => setOpen(false)}
                 >
                   <Icon size={20} aria-hidden="true" />
-                  {label}
+                  {t(label)}
                   {active && (
                     <ChevronLeft
                       size={16}
@@ -99,7 +109,7 @@ export function AppShell({
             <SignOutButton />
             <div className="sidebar-footer">
               <span dir="ltr">Al-Eyada Rx</span>
-              <span>دخول آمن</span>
+              <span>{t("دخول آمن")}</span>
             </div>
           </div>
         </div>
@@ -107,8 +117,8 @@ export function AppShell({
       <div className="workspace">
         <header className="topbar">
           <div className="topbar-context">
-            العيادة <ChevronLeft size={14} aria-hidden="true" />
-            <strong>{doctor ? "لوحة الطبيب" : "واجهة الصيدلي"}</strong>
+            {t("العيادة")} <ChevronLeft size={14} aria-hidden="true" />
+            <strong>{doctor ? t("لوحة الطبيب") : t("واجهة الصيدلي")}</strong>
           </div>
           <div className="account">
             <div className="avatar">
@@ -116,7 +126,7 @@ export function AppShell({
             </div>
             <div>
               <strong>
-                {doctor ? "طبيب العيادة" : account.pharmacy?.name}
+                {doctor ? t("طبيب العيادة") : account.pharmacy?.name}
               </strong>
               <span dir="ltr">{account.email}</span>
             </div>
@@ -126,11 +136,11 @@ export function AppShell({
           <DemoNotice />
           {children}
           <footer className="content-footer">
-            <span>العيادة • إدارة الوصفات والتحقق منها</span>
+            <span>{t("العيادة • إدارة الوصفات والتحقق منها")}</span>
             <span>
               {doctor
-                ? "سجل الوصفة والصرف الكامل — تجربة خاصة"
-                : "تحقق وصرف كامل مسجل — تجربة خاصة"}
+                ? t("سجل الوصفة والصرف الكامل — تجربة خاصة")
+                : t("تحقق وصرف كامل مسجل — تجربة خاصة")}
             </span>
           </footer>
         </main>

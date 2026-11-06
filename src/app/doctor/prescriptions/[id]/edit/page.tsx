@@ -1,3 +1,4 @@
+import { T } from "@/lib/i18n/client";
 import { randomUUID } from "node:crypto";
 import { notFound } from "next/navigation";
 import { requireRole } from "@/lib/auth/server";
@@ -17,8 +18,12 @@ export default async function EditDraft({
     return (
       <>
         <BackLink />
-        <h1>السجل غير قابل للتعديل</h1>
-        <p>السجلات المُصدرة أو النهائية محمية؛ لا يمكن تحويلها إلى مسودة.</p>
+        <h1>
+          <T text="السجل غير قابل للتعديل" />
+        </h1>
+        <p>
+          <T text="السجلات المُصدرة أو النهائية محمية؛ لا يمكن تحويلها إلى مسودة." />
+        </p>
       </>
     );
   return (

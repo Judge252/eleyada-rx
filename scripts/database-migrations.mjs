@@ -36,7 +36,7 @@ try {
   const tables = await database.owner.query(
     "select count(*)::integer as count from pg_tables where schemaname='public' and rowsecurity",
   );
-  assert.equal(tables.rows[0].count, 7);
+  assert.equal(tables.rows[0].count, 11);
   const listed = await run(
     process.execPath,
     [

@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { getAccount } from "./server";
 import { roleHome } from "./access";
+import { signInErrorMessage, signInUnavailable } from "./sign-in-errors";
 
 export type AuthState = { message: string; errors?: Record<string, string> };
 
@@ -19,11 +20,9 @@ export async function signIn(_previous: AuthState, values: FormData): Promise<Au
   try {
     const client = await createServerSupabaseClient();
     const { error } = await client.auth.signInWithPassword({ email, password });
-    if (error) return { message: error.status === 429
-      ? "محاولات كثيرة. انتظر قليلًا ثم أعد المحاولة."
-      : "تعذّر تسجيل الدخول. تحقق من بياناتك أو تواصل مع مسؤول العيادة." };
+    if (error) return { message: signInErrorMessage(error) };
   } catch {
-    return { message: "تعذّر الاتصال بخدمة الدخول. أعد المحاولة لاحقًا." };
+    return { message: signInUnavailable };
   }
   const account = await getAccount();
   if (!account) {

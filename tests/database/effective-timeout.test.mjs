@@ -26,7 +26,7 @@ async function ended(c, pid) {
   );
 }
 test("effective deadlines: reproduce function SET gap; separate outer SET aborts slow work and rolls back", async () => {
-  const db = await startTestDatabase(),
+  const db = await startTestDatabase({ legacyDoctorFixtures: true }),
     c = await db.connect();
   try {
     await db.owner.query(`create table public.timeout_marks(id int);
@@ -74,7 +74,7 @@ test("effective deadlines: reproduce function SET gap; separate outer SET aborts
 });
 
 test("prepared native probe SQL is transactional; client read timeout alone leaves SQL executing until the server deadline", async () => {
-  const db = await startTestDatabase(),
+  const db = await startTestDatabase({ legacyDoctorFixtures: true }),
     c = await db.connect();
   try {
     await db.owner.query(

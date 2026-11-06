@@ -126,8 +126,8 @@ export const statusLabels = {
   draft: "مسودة تجريبية",
 } as const;
 
-export function formatDate(date: string) {
-  return new Intl.DateTimeFormat("ar-EG", {
+export function formatDate(date: string, locale: "he" | "en" = "he") {
+  return new Intl.DateTimeFormat((locale === "he" ? "he-IL" : "en-GB"), {
     day: "numeric",
     month: "long",
     year: "numeric",
@@ -135,6 +135,6 @@ export function formatDate(date: string) {
   }).format(new Date(`${date}T12:00:00Z`));
 }
 
-export function formatNumber(value: number) {
-  return new Intl.NumberFormat("ar-EG").format(value);
+export function formatNumber(value: number, locale: "he" | "en" = "he") {
+  return new Intl.NumberFormat((locale === "he" ? "he-IL" : "en-GB")).format(value);
 }

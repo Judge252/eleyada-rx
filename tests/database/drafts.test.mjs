@@ -110,7 +110,7 @@ const deny = (operation, code) =>
     return true;
   });
 before(async () => {
-  db = await startTestDatabase();
+  db = await startTestDatabase({ legacyDoctorFixtures: true });
   for (const key of ["doctor", "pharmacist", "inactive", "outsider"]) {
     await db.owner.query("insert into auth.users(id) values($1)", [ids[key]]);
     await db.owner.query(

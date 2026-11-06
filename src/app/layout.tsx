@@ -1,23 +1,32 @@
 import type { Metadata } from "next";
-import "@fontsource-variable/noto-sans-arabic";
+import "@fontsource-variable/noto-sans-hebrew";
+import { getI18n, getLocale } from "@/lib/i18n/server";
+import { LanguageProvider } from "@/lib/i18n/client";
+import { direction } from "@/lib/i18n/core";
 import "./globals.css";
+import "./experience.css";
 
-export const metadata: Metadata = {
-  title: {
-    default: "العيادة Rx | معاينة تجريبية",
-    template: "%s | العيادة Rx",
-  },
-  description:
-    "نموذج واجهات عربي تجريبي لإدارة الوصفات والتحقق منها. لا توجد وصفات طبية صالحة أو بيانات حقيقية.",
-  robots: { index: false, follow: false },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getI18n();
+  return {
+    title: {
+      default: t("text_38"),
+      template: "%s — Clinic RX",
+    },
+    description: t("text_40"),
+    robots: { index: false, follow: false },
+  };
+}
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  const locale = await getLocale();
   return (
-    <html lang="ar" dir="rtl">
-      <body>{children}</body>
+    <html lang={locale} dir={direction(locale)}>
+      <body>
+        <LanguageProvider initialLocale={locale}>{children}</LanguageProvider>
+      </body>
     </html>
   );
 }

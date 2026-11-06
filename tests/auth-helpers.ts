@@ -30,10 +30,9 @@ export async function uiSignIn(page: Page, role: "doctor" | "pharmacist") {
     .fill(values.email);
   await page.getByLabel("كلمة المرور", { exact: true }).fill(values.password);
   await page.getByRole("button", { name: "تسجيل الدخول", exact: true }).click();
-  await expect(page).toHaveURL(
-    role === "doctor" ? /\/doctor$/ : /\/pharmacy$/,
-    { timeout: 20_000 },
-  );
+  await expect(page).toHaveURL(role === "doctor" ? /\/$/ : /\/portal$/, {
+    timeout: 20_000,
+  });
 }
 
 // Real GoTrue sign-in and SSR-issued cookies, never a production auth bypass.
