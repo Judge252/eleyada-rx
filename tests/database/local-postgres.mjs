@@ -20,6 +20,7 @@ async function freePort() {
 export async function startTestDatabase({
   applyMigrations = true,
   legacyDoctorFixtures = false,
+  through = null,
 } = {}) {
   const localRoot = resolve(".local");
   await mkdir(localRoot, { recursive: true });
@@ -78,7 +79,8 @@ export async function startTestDatabase({
     );
     const migrations = (await readdir("supabase/migrations"))
       .filter((name) => name.endsWith(".sql"))
-      .sort();
+      .sort()
+      .filter((name) => !through || name <= through);
     assert.ok(
       migrations.length > 0,
       "At least one version-controlled migration is required",

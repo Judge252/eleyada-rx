@@ -9,7 +9,7 @@ sanitizeTestErrors("REDESIGN_HTTP");
 test("real local PostgREST commits issue/search/selection/full dispensing/recovery and denies a second pharmacy", async () => {
   let db, rest;
   try {
-    db = await startTestDatabase({ legacyDoctorFixtures: true });
+    db = await startTestDatabase({ legacyDoctorFixtures: true, through: "20261106120000_multiclinic_form.sql" });
     const ids = [randomUUID(), randomUUID(), randomUUID()],
       sessions = ids.map(() => randomUUID()),
       pharmacies = [randomUUID(), randomUUID()];

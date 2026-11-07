@@ -116,7 +116,7 @@ async function selected(prescription, actor = "pharmacist") {
   return select(s.search_id, prescription.id, actor);
 }
 before(async () => {
-  db = await startTestDatabase();
+  db = await startTestDatabase({ through: "20261106120000_multiclinic_form.sql" });
   await db.owner.query(
     "insert into public.clinics(id,name) values($1,'SYNTHETIC A'),($2,'SYNTHETIC B')",
     [id.clinic, id.otherClinic],

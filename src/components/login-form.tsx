@@ -1,18 +1,11 @@
 "use client";
-import { useI18n, LanguageSwitcher } from "@/lib/i18n/client";
-import { useActionState, useState, useRef, type FormEvent } from "react";
-import {
-  FileText,
-  ScanLine,
-  ClipboardCheck,
-  Eye,
-  EyeOff,
-  LogIn,
-  FlaskConical,
-} from "lucide-react";
-import { Brand, Button, Field } from "@/components/ui";
+import Link from "next/link";
+import { useActionState, useState, type FormEvent } from "react";
+import { useI18n } from "@/lib/i18n/client";
 import { signIn } from "@/lib/auth/actions";
+import { Notice, Shell } from "@/components/rx/shell";
 
+// Doctor/clinic sign-in only. Pharmacy lookup is a separate, public screen.
 export function LoginForm({
   accessDenied = false,
 }: {
@@ -20,193 +13,86 @@ export function LoginForm({
 }) {
   const { t } = useI18n();
   const [state, action, pending] = useActionState(signIn, { message: "" });
-  const [localErrors, setErrors] = useState<Record<string, string>>({});
-  const errors = { ...state.errors, ...localErrors };
+  const [missing, setMissing] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const formRef = useRef<HTMLFormElement>(null);
 
   function submit(event: FormEvent<HTMLFormElement>) {
     const values = new FormData(event.currentTarget);
-    const nextErrors: Record<string, string> = {};
     if (
-      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
-        String(values.get("email") ?? "").trim(),
-      )
-    )
-      nextErrors.email = t("أدخل بريدًا إلكترونيًا بصيغة صحيحة.");
-    if (!String(values.get("password") ?? ""))
-      nextErrors.password = t("أدخل كلمة المرور.");
-    setErrors(nextErrors);
-    if (Object.keys(nextErrors).length) {
+      !String(values.get("username") ?? "").trim() ||
+      !String(values.get("password") ?? "")
+    ) {
       event.preventDefault();
-      formRef.current
-        ?.querySelector<HTMLInputElement>(
-          `[name="${Object.keys(nextErrors)[0]}"]`,
-        )
-        ?.focus();
-    }
+      setMissing(true);
+    } else setMissing(false);
   }
+  const message = missing
+    ? "rx_login_required"
+    : state.message ||
+      (accessDenied
+        ? "سجّل الدخول بحساب معتمد ونشط للوصول إلى هذه الصفحة."
+        : "");
 
   return (
-    <main className="login-page">
-      <section className="login-story">
-        <div className="story-top">
-          <span dir="ltr">Clinic RX</span>
-          <span className="story-pilot">
-            <span />
-            {t("تجربة خاصة")}{" "}
-          </span>
-        </div>
-        <div className="story-body">
-          <div className="story-mark">
-            <FileText size={37} strokeWidth={1.5} />
-            <span>Rx</span>
-          </div>
-          <p className="story-eyebrow">{t("العيادة • الوصفات الرقمية")}</p>
-          <h2>
-            {t("رعاية تبدأ بوصفة،")} <br />
-            {t("وثقة في كل خطوة.")}{" "}
-          </h2>
-          <p className="story-description">
-            {t(
-              "مساحة واحدة لتنظيم وصفات العيادة، ومراجعتها والتحقق منها لدى الصيدليات الشريكة.",
-            )}{" "}
-          </p>
-          <div className="story-steps">
-            <div>
-              <span>
-                <FileText size={20} />
-              </span>
-              <p>
-                <strong>{t("وصفة واضحة")}</strong>
-                <small>{t("تفاصيل منظمة يسهل الرجوع إليها")}</small>
-              </p>
-            </div>
-            <div>
-              <span>
-                <ScanLine size={20} />
-              </span>
-              <p>
-                <strong>{t("تحقق لدى الصيدلية")}</strong>
-                <small>{t("عرض أصل الوصفة دون تعديل بياناتها")}</small>
-              </p>
-            </div>
-            <div>
-              <span>
-                <ClipboardCheck size={20} />
-              </span>
-              <p>
-                <strong>{t("متابعة عملية الصرف")}</strong>
-                <small>{t("ضمن نطاق الصيدليات المشاركة مستقبلًا")}</small>
-              </p>
-            </div>
-          </div>
-        </div>
-        <p className="story-footer">
-          {t(
-            "تصوّر لسير العمل المستقبلي • الميزات غير مُفعّلة في هذه المرحلة",
-          )}{" "}
-        </p>
-      </section>
-      <section className="login-form-side">
-        <div className="login-inner">
-          <LanguageSwitcher />
-          <Brand />
-          <div className="login-title">
-            <div className="eyebrow">{t("مرحبًا بك في العيادة")}</div>
-            <h1>{t("تسجيل الدخول")}</h1>
-            <p>{t("واجهة دخول الطبيب والصيدليات الشريكة.")}</p>
-          </div>
-          <div className="login-demo">
-            <FlaskConical size={19} />
-            <p>
-              <strong>{t("دخول مخصص للحسابات المعتمدة")}</strong>
-              <span>
-                {t(
-                  "إنشاء الحسابات لدى مسؤول العيادة فقط. الوصفات والصرف ما زالا تجريبيين.",
-                )}
-              </span>
-            </p>
-          </div>
-          <form
-            ref={formRef}
-            noValidate
-            onSubmit={submit}
-            action={action}
-            aria-busy={pending}
-            className="login-form"
-          >
-            <Field
-              id="email"
-              label={t("البريد الإلكتروني")}
-              error={errors.email}
-            >
-              <input
-                className="input"
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="username"
-                dir="ltr"
-                placeholder="name@example.com"
-                aria-invalid={!!errors.email}
-                aria-describedby={errors.email ? "email-error" : undefined}
-                spellCheck={false}
-              />
-            </Field>
-            <Field
+    <Shell active="doctor" narrow>
+      <h1 className="cx-title">{t("rx_login_title")}</h1>
+      <p className="cx-lede">{t("rx_login_lede")}</p>
+      {message && <Notice tone="error">{t(message)}</Notice>}
+      <form
+        className="cx-panel"
+        action={action}
+        onSubmit={submit}
+        noValidate
+        aria-busy={pending}
+      >
+        <div className="cx-grid" style={{ gridTemplateColumns: "1fr" }}>
+          <label className="cx-field" htmlFor="username">
+            <span>{t("rx_username")}</span>
+            <input
+              id="username"
+              name="username"
+              className="cx-input cx-ltr"
+              autoComplete="username"
+              autoCapitalize="none"
+              spellCheck={false}
+              maxLength={32}
+              aria-invalid={missing}
+            />
+          </label>
+          <label className="cx-field" htmlFor="password">
+            <span>{t("rx_password")}</span>
+            <input
               id="password"
-              label={t("كلمة المرور")}
-              error={errors.password}
-            >
-              <div className="password-input">
-                <input
-                  className="input"
-                  id="password"
-                  name="password"
-                  type={showPassword ? "text" : "password"}
-                  autoComplete="current-password"
-                  dir="ltr"
-                  placeholder="••••••••"
-                  aria-invalid={!!errors.password}
-                  aria-describedby={
-                    errors.password ? "password-error" : undefined
-                  }
-                />
-                <button
-                  type="button"
-                  aria-label={
-                    showPassword
-                      ? t("إخفاء كلمة المرور")
-                      : t("إظهار كلمة المرور")
-                  }
-                  aria-pressed={showPassword}
-                  onClick={() => setShowPassword(!showPassword)}
-                >
-                  {showPassword ? <EyeOff size={19} /> : <Eye size={19} />}
-                </button>
-              </div>
-            </Field>
-            <Button type="submit" className="login-submit" disabled={pending}>
-              <LogIn size={18} />
-              {pending ? t("جارٍ تسجيل الدخول…") : t("تسجيل الدخول")}
-            </Button>
-            {(state.message || accessDenied) && (
-              <p className="feedback-message" role="alert">
-                {t(
-                  state.message ||
-                    "سجّل الدخول بحساب معتمد ونشط للوصول إلى هذه الصفحة.",
-                )}
-              </p>
-            )}
-          </form>
-          <p className="login-footer">
-            {t(
-              "لا تُدخل بيانات مرضى حقيقيين. لاستعادة الوصول، تواصل مع مسؤول العيادة.",
-            )}{" "}
-          </p>
+              name="password"
+              className="cx-input cx-ltr"
+              type={showPassword ? "text" : "password"}
+              autoComplete="current-password"
+              maxLength={1024}
+              aria-invalid={missing}
+            />
+          </label>
+          <label className="cx-check">
+            <input
+              type="checkbox"
+              checked={showPassword}
+              onChange={(e) => setShowPassword(e.target.checked)}
+            />
+            <span>{t("إظهار كلمة المرور")}</span>
+          </label>
         </div>
-      </section>
-    </main>
+        <div className="cx-actions">
+          <button className="cx-btn" type="submit" disabled={pending}>
+            {pending ? t("rx_signing_in") : t("rx_signin")}
+          </button>
+        </div>
+        <p className="cx-hint">{t("rx_login_forgot")}</p>
+      </form>
+      <p className="cx-hint">
+        {t("rx_login_pharmacy")}{" "}
+        <Link className="cx-link" href="/portal">
+          {t("rx_login_pharmacy_link")}
+        </Link>
+      </p>
+    </Shell>
   );
 }

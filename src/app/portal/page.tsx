@@ -1,6 +1,6 @@
-"use client";
+import { PharmacyPortal } from "@/components/rx/pharmacy-portal";
 
-import { PrescriptionExperience } from "@/components/experience/prescription-experience";
+// Public lookup: no pharmacy account, sign-in or registration.
 export default function Portal() {
-  return <PrescriptionExperience pharmacy />;
+  return <PharmacyPortal />;
 }

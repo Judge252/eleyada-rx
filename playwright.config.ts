@@ -28,6 +28,7 @@ export default defineConfig({
     command: "npm run start -- --hostname 127.0.0.1 --port 3107",
     url: "http://127.0.0.1:3107/login",
     reuseExistingServer: false,
+    env: { RX_UI_PREVIEW: "1" },
     timeout: 60_000,
   },
 });

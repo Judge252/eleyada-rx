@@ -7,61 +7,55 @@ const moduleUrl = (code) =>
 const drafts = moduleUrl(
   await readFile("src/lib/drafts/validation.ts", "utf8"),
 );
-const contractsUrl = moduleUrl(
-  (await readFile("src/lib/experience/contracts.ts", "utf8")).replace(
-    '"../drafts/validation"',
-    JSON.stringify(drafts),
-  ),
+const { normalizeIsraeliId, normalizeAccessCode, lookupInput, formPayload } =
+  await import(
+    moduleUrl(
+      (await readFile("src/lib/experience/contracts.ts", "utf8")).replace(
+        '"../drafts/validation"',
+        JSON.stringify(drafts),
+      ),
+    )
+  );
+const { normalizeUsername, loginEmail } = await import(
+  moduleUrl(await readFile("src/lib/auth/username.ts", "utf8"))
 );
-const { normalizedIdentity, formPayload, accessInput } = await import(
-  contractsUrl
-);
-const { passwordless } = await import(
-  moduleUrl(
-    (await readFile("src/lib/experience/passwordless.ts", "utf8")).replace(
-      '"./contracts"',
-      JSON.stringify(contractsUrl),
-    ),
-  )
-);
+const CODE = "RX1-K1-" + "ABCD-".repeat(7) + "ABCD";
 
-test("identity preserves zeros, maps both digit forms, rejects separators and unsupported tuples", () => {
-  assert.deepEqual(
-    normalizedIdentity({
-      country: " eg ",
-      type: "national_id",
-      identifier: " ٠٠٠۰۱۲۳۴ ",
-    }),
-    { country: "EG", type: "national_id", identifier: "00001234" },
-  );
-  for (const identifier of ["0000-1234", "0000 1234", "\t1234", 1234, "", null])
-    assert.equal(
-      normalizedIdentity({ country: "EG", type: "national_id", identifier }),
-      null,
-    );
-  assert.equal(
-    normalizedIdentity({
-      country: "XX",
-      type: "national_id",
-      identifier: "00001234",
-    }),
+test("Israeli ID: exactly nine digits, both digit forms map, zeros kept as a string, separators rejected", () => {
+  assert.equal(normalizeIsraeliId(" ٠٠٠۰۱۲۳۴۵ "), "000012345");
+  assert.equal(normalizeIsraeliId("000012345"), "000012345");
+  for (const bad of [
+    "12345678",
+    "1234567890",
+    "0000-1234",
+    "0000 1234",
+    "00001234a",
+    "",
     null,
-  );
-  assert.equal(
-    normalizedIdentity({
-      country: "EG",
-      type: "passport",
-      identifier: "00001234",
-    }),
-    null,
-  );
+    123456789,
+  ])
+    assert.equal(normalizeIsraeliId(bad), null);
 });
-test("form rejects forged actor/clinic and incomplete or nonintegral medications", () => {
+test("access code: case, spaces and hyphens are cosmetic; wrong format or alphabet rejected", () => {
+  const canonical = CODE.replace(/-/g, "");
+  assert.equal(normalizeAccessCode(CODE), canonical);
+  assert.equal(normalizeAccessCode(CODE.toLowerCase().replace(/-/g, " ")), canonical);
+  for (const bad of ["", "RX1-K1-ABCD", CODE.replace("ABCD", "ABCU"), "x".repeat(81), null])
+    assert.equal(normalizeAccessCode(bad), null);
+});
+test("public lookup input requires BOTH proofs and nothing else; an ID alone is not accepted", () => {
+  assert.deepEqual(lookupInput({ identifier: "000012345", code: CODE }), {
+    identifier: "000012345",
+    code: CODE.replace(/-/g, ""),
+  });
+  assert.equal(lookupInput({ identifier: "000012345" }), null);
+  assert.equal(lookupInput({ identifier: "000012345", code: "" }), null);
+  assert.equal(lookupInput({ code: CODE }), null);
+});
+test("form is Israel-only: country/type/forged actor or clinic keys and malformed medications are rejected", () => {
   const good = {
     name: "SYNTHETIC",
-    country: "EG",
-    type: "national_id",
-    identifier: "00001234",
+    identifier: "000012345",
     notes: "",
     items: [
       {
@@ -76,146 +70,25 @@ test("form rejects forged actor/clinic and incomplete or nonintegral medications
     ],
   };
   assert.ok(formPayload(good));
-  assert.equal(formPayload({ ...good, doctor_id: "forged" }), null);
-  assert.equal(formPayload({ ...good, clinic_id: "forged" }), null);
+  for (const extra of [
+    { country: "IL" },
+    { type: "national_id" },
+    { doctor_id: "forged" },
+    { clinic_id: "forged" },
+  ])
+    assert.equal(formPayload({ ...good, ...extra }), null);
+  assert.equal(formPayload({ ...good, identifier: "1234" }), null);
   assert.equal(formPayload({ ...good, items: [] }), null);
   assert.equal(
     formPayload({ ...good, items: [{ ...good.items[0], quantity: 1.5 }] }),
     null,
   );
 });
-function mock({
-  allowed = true,
-  approved = true,
-  session = true,
-  user = true,
-  providerError = false,
-} = {}) {
-  const calls = [];
-  const client = {
-    rpc: async (name, args) => {
-      calls.push({ name, args });
-      return {
-        error: null,
-        data:
-          name === "request_prescriber_access"
-            ? allowed
-            : name === "has_active_session"
-              ? session
-              : { state: approved ? "verified" : "unauthorized" },
-      };
-    },
-    auth: {
-      signInWithOtp: async (args) => {
-        calls.push({ name: "challenge", args });
-        return { error: providerError ? {} : null };
-      },
-      verifyOtp: async (args) => {
-        calls.push({ name: "verify", args });
-        return { error: null };
-      },
-      getUser: async () => ({
-        error: null,
-        data: { user: user ? { id: "synthetic" } : null },
-      }),
-      signOut: async (args) => {
-        calls.push({ name: "signOut", args });
-        return { error: null };
-      },
-    },
-  };
-  return { client, calls };
-}
-test("challenge never enables signup and response is identical across provider/budget outcomes", async () => {
-  for (const options of [{}, { allowed: false }, { providerError: true }]) {
-    const m = mock(options);
-    assert.deepEqual(
-      await passwordless(
-        m.client,
-        { operation: "challenge", email: "synthetic@example.invalid" },
-        true,
-      ),
-      { state: "accepted" },
-    );
-    for (const call of m.calls.filter((c) => c.name === "challenge"))
-      assert.deepEqual(call.args.options, { shouldCreateUser: false });
-  }
-  const m = mock();
-  assert.equal(
-    (
-      await passwordless(
-        m.client,
-        { operation: "challenge", email: "synthetic@example.invalid" },
-        false,
-      )
-    ).state,
-    "unavailable",
-  );
-  assert.equal(m.calls.length, 0);
-});
-test("OTP proves email control only; verified user/current session/operator approval are mandatory", async () => {
-  const input = {
-    operation: "verify",
-    email: "synthetic@example.invalid",
-    token: "123456",
-  };
-  for (const options of [
-    { approved: false },
-    { session: false },
-    { user: false },
-  ]) {
-    const m = mock(options);
-    assert.equal(
-      (await passwordless(m.client, input, true)).state,
-      "unauthorized",
-    );
-    assert.ok(m.calls.some((c) => c.name === "signOut"));
-  }
-  const m = mock();
-  assert.equal((await passwordless(m.client, input, true)).state, "verified");
-  assert.equal(m.calls.find((c) => c.name === "verify").args.type, "email");
-  const denied = mock({ allowed: false });
-  assert.equal(
-    (await passwordless(denied.client, input, true)).state,
-    "unauthorized",
-  );
-  assert.ok(!denied.calls.some((c) => c.name === "verify"));
-});
-test("onboarding uses generic persistent admission and cannot authenticate or approve", async () => {
-  const m = mock();
-  assert.equal(
-    (
-      await passwordless(
-        m.client,
-        {
-          operation: "onboard",
-          email: "synthetic@example.invalid",
-          name: "Synthetic",
-          clinic: "Synthetic",
-        },
-        false,
-      )
-    ).state,
-    "accepted",
-  );
-  assert.deepEqual(
-    m.calls.map((c) => c.name),
-    ["request_prescriber_access"],
-  );
-  assert.equal(
-    accessInput({
-      operation: "challenge",
-      email: "synthetic@example.invalid",
-      shouldCreateUser: true,
-    }),
-    null,
-  );
-  assert.equal(
-    accessInput({
-      operation: "verify",
-      email: "synthetic@example.invalid",
-      token: "123",
-    }),
-    null,
-  );
+test("username maps deterministically to a reserved non-deliverable login identity; it is not a directory or claim", () => {
+  assert.equal(normalizeUsername("  Dr.Cohen_1 "), "dr.cohen_1");
+  assert.equal(normalizeUsername("  Dr.Cohen-1 "), "dr.cohen-1");
+  for (const bad of ["ab", "-abc", "a b c", "a@b.co", "x".repeat(33), "", null, 5])
+    assert.equal(normalizeUsername(bad), null);
+  assert.equal(loginEmail("dr.cohen"), "dr.cohen@prescribers.clinic-rx.invalid");
+  assert.ok(loginEmail("a1b").endsWith(".invalid"));
 });

@@ -10,7 +10,7 @@ export function SignOutButton() {
   const [state, action, pending] = useActionState(signOut, { message: "" });
   return (
     <form action={action}>
-      <button type="submit" className="nav-link exit-link" disabled={pending}>
+      <button type="submit" className="cx-btn is-secondary" disabled={pending}>
         <LogOut size={18} aria-hidden="true" />
         {pending ? t("جارٍ إنهاء الجلسة…") : t("تسجيل الخروج")}
       </button>

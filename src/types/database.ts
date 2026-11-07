@@ -167,25 +167,31 @@ export type Database = {
       };
       dispensations: {
         Row: {
+          access_method: string;
           dispensed_at: string;
           id: string;
-          pharmacist_user_id: string;
-          pharmacy_id: string;
+          pharmacist_user_id: string | null;
+          pharmacy_id: string | null;
+          pharmacy_label: string | null;
           prescription_id: string;
         };
         ComputedFields: never;
         Insert: {
+          access_method?: string;
           dispensed_at?: string;
           id?: string;
-          pharmacist_user_id: string;
-          pharmacy_id: string;
+          pharmacist_user_id?: string | null;
+          pharmacy_id?: string | null;
+          pharmacy_label?: string | null;
           prescription_id: string;
         };
         Update: {
+          access_method?: string;
           dispensed_at?: string;
           id?: string;
-          pharmacist_user_id?: string;
-          pharmacy_id?: string;
+          pharmacist_user_id?: string | null;
+          pharmacy_id?: string | null;
+          pharmacy_label?: string | null;
           prescription_id?: string;
         };
         Relationships: [
@@ -406,6 +412,10 @@ export type Database = {
         };
         Returns: Json;
       };
+      consume_login_attempt: {
+        Args: { p_client?: string; p_username: string };
+        Returns: boolean;
+      };
       delete_doctor_draft: {
         Args: { p_expected_updated_at: string; p_id: string };
         Returns: boolean;
@@ -445,6 +455,25 @@ export type Database = {
       };
       lookup_pharmacy_prescription: {
         Args: { p_reference: string };
+        Returns: Json;
+      };
+      public_dispense_prescription: {
+        Args: {
+          p_full_confirmed: boolean;
+          p_identity_confirmed: boolean;
+          p_lookup_id: string;
+          p_pharmacy_label?: string;
+          p_prescription_id: string;
+          p_request_id: string;
+        };
+        Returns: Json;
+      };
+      public_lookup_prescription: {
+        Args: { p_client?: string; p_code: string; p_identifier: string };
+        Returns: Json;
+      };
+      public_recover_dispensing: {
+        Args: { p_lookup_id: string; p_request_id: string };
         Returns: Json;
       };
       recover_dispensing_receipt: {

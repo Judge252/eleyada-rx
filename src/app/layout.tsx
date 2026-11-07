@@ -4,7 +4,7 @@ import { getI18n, getLocale } from "@/lib/i18n/server";
 import { LanguageProvider } from "@/lib/i18n/client";
 import { direction } from "@/lib/i18n/core";
 import "./globals.css";
-import "./experience.css";
+import "./rx.css";
 
 export async function generateMetadata(): Promise<Metadata> {
   const { t } = await getI18n();

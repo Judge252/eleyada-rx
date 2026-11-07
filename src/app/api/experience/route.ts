@@ -5,13 +5,12 @@ import { getAccount } from "@/lib/auth/server";
 import { sameOrigin } from "@/lib/issuance/validation";
 import { object } from "@/lib/drafts/validation";
 import {
-  accessInput,
   formPayload,
+  lookupInput,
   messages,
-  normalizedIdentity,
   validRequestId,
 } from "@/lib/experience/contracts";
-import { passwordless } from "@/lib/experience/passwordless";
+import { createHash } from "node:crypto";
 
 export const dynamic = "force-dynamic";
 async function response(body: unknown, status = 200) {
@@ -34,6 +33,8 @@ function failure(code?: string) {
         ? "inactive"
         : code === "PT429"
           ? "throttled"
+          : code === "PT404"
+            ? "notFound"
           : code === "PT409"
             ? "conflict"
             : code === "22023" || code?.startsWith("23")
@@ -46,6 +47,7 @@ function failure(code?: string) {
       inactive: 402,
       throttled: 429,
       conflict: 409,
+      notFound: 404,
       validation: 400,
       unavailable: 503,
     }[state],
@@ -89,35 +91,96 @@ export async function POST(request: Request) {
   }
   try {
     const client = await createServerSupabaseClient();
-    const access = accessInput(input);
-    if (["challenge", "verify", "onboard"].includes(String(input.operation))) {
-      if (!access) return failure("22023");
-      const result = await passwordless(
-        client,
-        access,
-        process.env.RX_PASSWORDLESS_ENABLED === "true",
-      );
-      if (result.state === "unavailable") return failure();
-      if (result.state === "unauthorized") return failure("42501");
-      return response(result);
-    }
-    const account = await getAccount();
-    if (!account) return failure("42501");
-    let result;
     const exact = (keys: string[]) =>
       Object.keys(input).length === keys.length &&
       Object.keys(input).every((k) => keys.includes(k));
+    // Public pharmacy capability: no account. Budgets and proofs live in the database.
+    // The client bucket is advisory only (an attacker can rotate it); per-ID/global budgets are authoritative.
+    const forwarded = (request.headers.get("x-forwarded-for") ?? "")
+      .split(",")[0]
+      .trim();
+    const bucket = createHash("sha256")
+      .update("clinic-rx|client|" + (forwarded || request.headers.get("x-real-ip") || "unknown"))
+      .digest("hex");
+    if (input.operation === "lookup" && exact(["operation", "identifier", "code"])) {
+      const proof = lookupInput(input);
+      if (!proof) return failure("22023");
+      const result = await client
+        .rpc("public_lookup_prescription", {
+          p_identifier: proof.identifier,
+          p_code: proof.code,
+          p_client: bucket,
+        })
+        .abortSignal(AbortSignal.timeout(10000));
+      const data = result.data as { code?: string } | null;
+      if (result.error || data?.code)
+        return failure(result.error?.code ?? data?.code);
+      return response({ result: result.data });
+    }
+    if (
+      input.operation === "dispense" &&
+      exact([
+        "operation",
+        "requestId",
+        "lookupId",
+        "prescriptionId",
+        "identityConfirmed",
+        "fullConfirmed",
+        "pharmacyLabel",
+      ]) &&
+      validRequestId(input.requestId) &&
+      validRequestId(input.lookupId) &&
+      validRequestId(input.prescriptionId) &&
+      input.identityConfirmed === true &&
+      input.fullConfirmed === true &&
+      typeof input.pharmacyLabel === "string" &&
+      input.pharmacyLabel.length <= 120
+    ) {
+      const result = await client
+        .rpc("public_dispense_prescription", {
+          p_request_id: input.requestId,
+          p_lookup_id: input.lookupId,
+          p_prescription_id: input.prescriptionId,
+          p_identity_confirmed: true,
+          p_full_confirmed: true,
+          p_pharmacy_label: input.pharmacyLabel,
+        })
+        .abortSignal(AbortSignal.timeout(10000));
+      const data = result.data as { code?: string } | null;
+      if (result.error || data?.code)
+        return failure(result.error?.code ?? data?.code);
+      return response({ result: result.data });
+    }
+    if (
+      input.operation === "recoverDispense" &&
+      exact(["operation", "requestId", "lookupId"]) &&
+      validRequestId(input.requestId) &&
+      validRequestId(input.lookupId)
+    ) {
+      const result = await client.rpc("public_recover_dispensing", {
+        p_request_id: input.requestId,
+        p_lookup_id: input.lookupId,
+      });
+      const data = result.data as { code?: string } | null;
+      if (result.error || data?.code)
+        return failure(result.error?.code ?? data?.code);
+      return response({ result: result.data });
+    }
+    // Doctor operations: Supabase Auth session + server/database authorization on every call.
+    const account = await getAccount();
+    if (!account || account.role !== "doctor") return failure("42501");
+    let result;
+    const reveal = async (id: unknown) => {
+      if (typeof id !== "string") return null;
+      const revealed = await client.rpc("reveal_doctor_reference", { p_id: id });
+      return revealed.error
+        ? null
+        : ((revealed.data as { reference?: string } | null)?.reference ?? null);
+    };
     if (input.operation === "context" && exact(["operation"])) {
-      if (account.role === "pharmacist")
-        return response({
-          state: "pharmacist",
-          pharmacy: account.pharmacy,
-          actorId: account.id,
-        });
       result = await client.rpc("get_prescriber_context");
     } else if (
       input.operation === "issue" &&
-      account.role === "doctor" &&
       exact([
         "operation",
         "requestId",
@@ -149,84 +212,24 @@ export async function POST(request: Request) {
           p_confirmed: true,
         })
         .abortSignal(AbortSignal.timeout(10000));
+      const issued = result.data as { id?: string; code?: string } | null;
+      if (!result.error && !issued?.code && issued?.id)
+        result = {
+          ...result,
+          data: { ...issued, reference: await reveal(issued.id) },
+        };
     } else if (
       input.operation === "recoverIssue" &&
-      account.role === "doctor" &&
       exact(["operation", "requestId"]) &&
       validRequestId(input.requestId)
     ) {
       result = await client.rpc("recover_form_receipt", {
         p_request_id: input.requestId,
       });
-    } else if (
-      input.operation === "search" &&
-      account.role === "pharmacist" &&
-      exact(["operation", "country", "type", "identifier", "offset"])
-    ) {
-      const identity = normalizedIdentity(input);
-      if (
-        !identity ||
-        !Number.isInteger(input.offset) ||
-        Number(input.offset) < 0 ||
-        Number(input.offset) > 10000
-      )
-        return failure("22023");
-      result = await client
-        .rpc("search_pharmacy_identity", {
-          p_country: identity.country,
-          p_type: identity.type,
-          p_identifier: identity.identifier,
-          p_offset: Number(input.offset),
-        })
-        .abortSignal(AbortSignal.timeout(10000));
-    } else if (
-      input.operation === "select" &&
-      account.role === "pharmacist" &&
-      exact(["operation", "searchId", "prescriptionId"]) &&
-      validRequestId(input.searchId) &&
-      validRequestId(input.prescriptionId)
-    ) {
-      result = await client
-        .rpc("select_pharmacy_prescription", {
-          p_search_id: input.searchId,
-          p_prescription_id: input.prescriptionId,
-        })
-        .abortSignal(AbortSignal.timeout(10000));
-    } else if (
-      input.operation === "dispense" &&
-      account.role === "pharmacist" &&
-      exact([
-        "operation",
-        "requestId",
-        "lookupId",
-        "prescriptionId",
-        "identityConfirmed",
-        "fullConfirmed",
-      ]) &&
-      validRequestId(input.requestId) &&
-      validRequestId(input.lookupId) &&
-      validRequestId(input.prescriptionId) &&
-      input.identityConfirmed === true &&
-      input.fullConfirmed === true
-    ) {
-      result = await client
-        .rpc("dispense_pharmacy_prescription", {
-          p_request_id: input.requestId,
-          p_lookup_id: input.lookupId,
-          p_prescription_id: input.prescriptionId,
-          p_identity_confirmed: true,
-          p_full_confirmed: true,
-        })
-        .abortSignal(AbortSignal.timeout(10000));
-    } else if (
-      input.operation === "recoverDispense" &&
-      account.role === "pharmacist" &&
-      exact(["operation", "requestId"]) &&
-      validRequestId(input.requestId)
-    ) {
-      result = await client.rpc("recover_dispensing_receipt", {
-        p_request_id: input.requestId,
-      });
+      const recovered = result.data as { id?: string; prescription_id?: string } | null;
+      const id = recovered?.prescription_id ?? recovered?.id;
+      if (!result.error && id)
+        result = { ...result, data: { ...recovered, reference: await reveal(id) } };
     } else return failure("22023");
     const data = result.data as { code?: string } | null;
     if (result.error || data?.code)

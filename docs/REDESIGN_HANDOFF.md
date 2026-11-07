@@ -1,106 +1,47 @@
-# Clinic RX — localization and activation handoff
+# Clinic RX — handoff
 
-2026-11-06. This request superseded the earlier phase-stop boundary and authorized the reviewed existing-project migration. **Localization, database activation and the bounded authenticated hosted workflow checks are complete. Delivered email OTP verification remains blocked by the provider configuration below.** The user subsequently authorized committing and pushing this implementation to the existing GitHub repository. No manual deployment was requested.
+Updated 2026-11-07. Nothing from this update is committed, pushed, deployed or applied to the hosted database. **One migration is pending final review (below).** Architecture memory: [ARCHITECTURE_MEMORY.md](ARCHITECTURE_MEMORY.md). Account runbook: [prescriber-accounts.md](prescriber-accounts.md).
 
-## Product and language implementation
+## What changed (local)
 
-- Exact text wordmark: **Clinic RX**. Hebrew is the default (`he`, RTL), English is secondary (`en`, LTR). Navigation, login, metadata, protected screens, error/validation/loading states, onboarding, receipts, accessibility labels and print text use the common system.
-- `src/lib/i18n/` contains parallel Hebrew/English dictionaries (705 keys, including deterministic country names), a canonical source alias catalog, server cookie readers, a client language provider, explicit UI text/attribute translators and the accessible switcher. This translates identified interface text only; it does not recursively translate database results, DOM contents or patient/medication fields.
-- Initial server rendering reads `clinic_rx_language`. Switching updates language/direction and the preference cookie in place, without navigating, submitting or replacing the form. Clinical fields, review state, errors and request UUIDs survive the switch. Arabic remains supported as entered/historical content and digit input, not as an interface language.
-- Noto Sans Hebrew/Latin is served locally through the installed font package. Existing teal/ink/blue styling is retained; logical positioning, directional arrows, bidi handling, warning colors and language-specific print wording are applied.
-- The form stays public and requires individual email verification, as clarified by the user. Pharmacy password authentication is retained. No patient accounts, payment integration, partial dispensing, refill support, shared prescriber identity or source-code publication/license change was added.
+1. **Israel only.** No country or document-type fields anywhere. `issue_form_prescription` (replaced additively in the new migration) fixes `IL` / `national_id` in the database; the app never sends them. Identifier = exactly nine digits, Arabic-Indic/Persian digits converted, leading zeros kept as text, separators rejected. **No checksum is enforced**: I searched and found no authoritative Israeli (Population and Immigration Authority / statute) source; secondary sources (python-stdnum, Wikipedia mirror) describe nine digits with a Luhn check digit, which I did not treat as authoritative. Historical identities (other countries/types) are untouched, not reclassified or merged; they cannot be reached through the new public lookup (it matches `IL`/`national_id` only).
+2. **Doctor sign-in = username + password** (`/login`, Supabase Auth). OTP entry, passwordless controls and public self-activation are gone from the UI and API; `request_prescriber_access` is revoked. Username → `username@prescribers.clinic-rx.invalid` (no directory/table/RPC, not an authorization claim). Generic failure for unknown user, wrong password, non-doctor or unapproved account; persistent throttle (`consume_login_attempt`, 12 per username / 40 per client per 15 min) plus Supabase's own limits. Sessions, `has_active_session()` revocation, clinic isolation and entitlement checks are unchanged. Entitlement still blocks only new issuance; records and cancellation stay available.
+3. **Open pharmacy portal** (`/portal`, nav "Pharmacy"): no account, sign-in or registration. Proof = Israeli ID **and** the patient-held RX1 access code (the existing secure reference; the doctor receipt now shows it, fetched via the audited `reveal_doctor_reference`). ID alone, wrong code, wrong ID and malformed input all return the same generic 404. A correct pair returns only that one prescription (the code identifies exactly one, so there is nothing to choose between; the explicit review step stays). Identity and full-dispensing confirmations, atomic single completion, cancellation/expiry rechecks, idempotent request id and receipt recovery are preserved. No anonymous table access; public RPCs run as a least-privilege role that can only see the one proven prescription.
+4. **UX redesign**: one small design system (`src/app/rx.css`), applied to sign-in, prescription entry, review, receipt (with patient code and print), pharmacy lookup/review/receipt. Hebrew default RTL, English LTR, 44px controls, visible focus, no gradients/hero/stat cards, `bdi`/`dir=auto` for mixed Hebrew/English medication text. Legacy `/doctor/**` and `/pharmacy` account pages were not restyled.
+5. **Graphify**: installed (`graphify` CLI + local uv Python); AST-only run on a staged copy of `src`, `tests`, migrations and this doc (no `.env*`, `.local`, `test-results`, hosted SQL, operator scripts; secret-pattern scan of the staged tree found nothing). Nothing was sent to an external service; no semantic (LLM) extraction. Output: `graphify-out/graph.json`, `GRAPH_REPORT.md` (657 nodes, 1237 edges, 40 communities). **SQL files are not parsed** (needs `pip install "graphifyy[sql]"`, not installed); the SQL map lives in ARCHITECTURE_MEMORY.md. `graphify-out/` is not in `.gitignore`; decide whether to commit it.
 
-## Exact database activation
+## Anonymous dispensing: attribution limits (read before approving)
 
-Target verified before application: **`fckdsiozmufyhbnignet`**. The linked reference and configured application URL matched privately. `.env.local` was inspected without printing values and still contains the existing public URL/publishable-key configuration only; no replacement environment file or privileged application key was created.
+`dispensations.pharmacy_id` and `pharmacist_user_id` were `NOT NULL` with a composite FK to `app_users` and a guard trigger requiring an active pharmacist. A public visitor has no verified identity, so the migration (additive) adds `access_method` (`pharmacy_account` default | `public_code`) and `pharmacy_label` (≤120 chars, **unverified** free text), makes the two columns nullable, and adds a check: account rows keep both FKs and no label; public rows have both NULL. Existing rows satisfy it unchanged; the guard trigger skips the pharmacist check only for `public_code`. Consequences: a public completion proves only that someone held the ID + code and ticked both confirmations. It cannot say which pharmacy or pharmacist did it, and the label can be false. Audit rows (`audit_events`) record no actor for it. Per-ID/global budgets limit abuse but allow a determined attacker to lock out lookups for a known ID for up to an hour (per-client buckets are advisory because the anon key is public). Anyone holding a patient's ID **and** code can dispense; the code is the bearer secret, so patients must treat it like the prescription itself.
 
-The seven earlier remote versions matched the repository. After the local regression checks and successful linked dry run, the following exact migration was applied once:
+## Pending hosted migration (not applied)
 
 | Migration | SHA-256 |
 | --- | --- |
-| `supabase/migrations/20261106120000_multiclinic_form.sql` | `EA53D97B0249101EE2858EAD6A773D046DB3B4418E305FC6AB74A791E883260A` |
+| `supabase/migrations/20261107120000_il_username_public_pharmacy.sql` | `6C93E42B9C09F4B2CD320F7DDE50C7DCA80F1E41BDF975405A905CFAD7E4D553` |
 
-Post-application remote history matches all eight local versions:
+Read-only hosted check (`supabase migration list --linked`, 2026-11-07): remote has all eight earlier versions, matching the repo; the new version is local-only. Applied `20261106120000` hash unchanged (`EA53D97B…260A`).
 
-`20261019141747`, `20261019155321`, `20261021210732`, `20261021215141`, `20261022010926`, `20261022024957`, `20261022173000`, `20261106120000`.
+Access effects if applied: (a) **adds** anon+authenticated EXECUTE on `public_lookup_prescription`, `public_dispense_prescription`, `public_recover_dispensing`, `consume_login_attempt`; (b) **removes** EXECUTE on `search_pharmacy_identity` from `authenticated` (ID-only disclosure) and on `request_prescriber_access` from `anon`/`authenticated`; the existing authenticated pharmacy account paths that use a reference code still work; (c) alters `dispensations` (two nullable columns, two new columns, one check) and replaces `guard_dispensation` and `issue_form_prescription`; (d) new tables `rx_private.public_lookups`, `public_dispensing_receipts` (RLS on, no client grants) and role `rx_public_executor` (nologin, owns the three public functions). RLS is not disabled anywhere. Apply only after review, then deploy the app; the new app calls RPCs that do not exist until the migration is applied (public lookup and sign-in throttle fail closed as "unavailable"). Post-apply: `npm run db:types:check`, provision a synthetic test prescriber (runbook), run one end-to-end issue → lookup → dispense on synthetic data.
 
-The applied migration adds clinic membership, approval/entitlement context, additive patient identity mappings, atomic form issuance/recovery, exact paginated pharmacy identity lookup and selected-prescription grants. It retains existing lifecycle/immutability/session/rate-limit/dispensing safeguards and extends clinic isolation to legacy routes. No applied migration was rewritten, history repaired, database reset/reseeded or existing clinical record deleted/merged.
+Unverified until then (hosted): that Supabase Auth accepts the `.invalid` login domain; the live username sign-in; hosted RPC behaviour of the new functions.
 
-Hosted postchecks confirmed the form RPC exists, public tables have RLS enabled, restrictive clinic policies and dispensing uniqueness exist, anonymous issue/search/private-identity access is denied, and client provisioning is denied. The legacy clinic and approved prescriber mapping exist. Following explicit user authorization, only the designated test clinic received a finite test entitlement: **2026-11-06 02:50:49.334722 UTC through 2026-11-13 02:50:49.334722 UTC**, exactly seven days. This is a test grant, not evidence of payment. Existing professional display names and historical attribution were preserved.
+## Evidence (kept separate)
 
-## Auth configuration: attempted, rejected, not enabled
-
-Prepared a bilingual Clinic RX email-code template in `supabase/templates/magic-link.html` using `{{ .Token }}`, and a narrow existing-project CLI operator tool in `scripts/clinic-auth-config.mjs`. The tool previews only explicitly declared Auth changes, preserves unrelated settings and uses the existing CLI credential mechanism without exposing credentials.
-
-The provider rejected the Auth update with HTTP 400 / `ConfigPushAuthUpdateStatusError`:
-
-> Email template modification is not available for free tier projects using the default email provider. Please upgrade your plan or configure a custom SMTP provider.
-
-Committed configuration was reinspected after the failure: the requested email-signup/template changes remain pending. No upgrade, purchase, SMTP credential change or password reset was attempted. The existing pharmacy accounts/passwords were not changed. The prepared template was **not** activated.
-
-Actual public Auth settings were separately checked: unrestricted signup is disabled, email Auth is enabled, and anonymous users are disabled. The proposed template content is not a substitute for actual provider delivery evidence.
-
-`RX_PASSWORDLESS_ENABLED` remains unset/false because the required token-template delivery configuration is not available. The application fails closed instead of reporting a sent code or successful verification. No OTP email was sent. The user explicitly approved a recipient already present as the approved prescriber, private code entry, a seven-day test grant, and one synthetic second pharmacy identity.
-
-Environment inspection found no SMTP credentials/service available for reuse. A read-only linked configuration comparison confirmed that the existing project has no custom SMTP sender configured. No service was purchased and no sender settings were changed.
-
-## Actual verification this run
-
-| Evidence | Result |
-| --- | --- |
-| Typecheck, lint, production build, `git diff --check` | Passed |
-| Existing clinical database regression suite | 72 tests passed |
-| Redesign SQL and real local PostgREST workflow | 12 tests passed |
-| Passwordless/validation unit suite | 5 tests passed; Auth mocked |
-| Localization catalog/source checks | 3 tests passed |
-| Focused connected-experience browser checks | 10 passed; authenticated API responses mocked, anonymous/CSRF checks use the real app endpoint |
-| Hebrew/English browser verification | 7 passed: three widths per language plus state/UUID/error/receipt/print persistence |
-| Responsive routes | Doctor form, pharmacy portal and login checked at 360, 768 and 1440px; no horizontal overflow or hydration errors observed |
-| Actual hosted anonymous RPC requests | Issuance and national-ID search both denied with HTTP 401 |
-| Actual hosted metadata/access checks | Passed as described above; eight migrations applied/matched |
-| Actual authenticated hosted acceptance | 10 grouped checks passed; real provider-issued sessions, application UI/API and hosted database; email delivery excluded |
-| Local server against configured project | `/`, `/portal`, `/login` return HTTP 200 with Hebrew SSR; anonymous issue/search denied with localized errors; OTP gate returns unavailable without requesting an email |
-
-The successful local PostgREST scenario commits synthetic issuance → exact national-ID lookup → explicit selection → full dispensing → second-pharmacy rejection, plus retries and receipt recovery. Local SQL also covers changed-payload conflicts, cross-clinic access, inactive membership/entitlement, cancellation/expiry races and immutable history. These are **local** results, not hosted success or real OTP delivery.
-
-### Bounded hosted acceptance after user approval
-
-`scripts/clinic-hosted-acceptance.mjs` exercised the local production application against the actual configured hosted Supabase project. Existing operator authorization was confined to provisioning, test entitlement/scoping metadata and provider-issued test sessions. Session tokens stayed in memory and HTTP-only browser cookies. Clinical mutations used ordinary authenticated application handlers and protected user-scoped RPCs, never privileged clinical inserts. The provider's admin `generateLink` followed by token-hash verification creates real sessions without sending email; this **does not verify delivered OTP or the public code-entry flow**.
-
-Actual successful hosted checks:
-
-- Approved prescriber context and exact seven-day entitlement; real doctor UI filled with synthetic data, review and explicit issuance confirmation.
-- Two synthetic prescriptions with two nonclinical medication items each; leading zeros and Arabic/Persian digit normalization; identical issuance replay, changed-payload conflict and receipt recovery.
-- Real pharmacy UI exact country/type/identifier lookup, two matches, explicit selection, immutable medication review and both required confirmations.
-- One atomic full dispensation; identical replay/recovery; a separately authenticated synthetic pharmacy rejected when attempting to dispense it again; search grants isolated between actors.
-- Second prescription cancelled through the authorized lifecycle handler; its previously selected dispensing grant rejected. An existing expired issued record was checked without backdating or editing history: lifecycle was expired and pharmacy lookup exposed no clinical contents.
-- Cross-clinic prescription RLS and legacy lifecycle RPC denied access; the legacy document rendered Next.js's not-found fallback with no test patient/medication content; issuance without entitlement denied. Anonymous and pharmacist issuance denied.
-- Exactly two form receipts remain: one issued prescription with exactly one dispensation and one cancelled prescription without a dispensation. No duplicate clinical writes were made during resumed verification.
-
-The first pass stopped at an overly strict HTTP-404 assertion. Committed state was inspected before retrying: issuance/dispensing/cancellation were already correct. Installed Next.js documentation confirms streamed `notFound()` responses retain HTTP 200. The remaining verification checked the explicit `NEXT_HTTP_ERROR_FALLBACK;404` marker, `noindex`, and absence of clinical content; it then completed without issuing or dispensing again. One read-only fixture guard initially referenced a nonexistent column; it was corrected to the private patient-clinic mapping before continuing. These were operator-test assertion/query issues; no application or database safeguard was bypassed.
-
-The synthetic second pharmacy and its app-user access were disabled after testing, with audit links retained. The existing pharmacy password, activity and membership were preserved. Temporary doctor membership changes for the cross-clinic denial check were restored and verified; the empty synthetic clinic was deactivated. No patient history was reset or deleted. A UUID/status-only ignored local ledger records committed state and cleanup, without credentials, OTPs or clinical payloads. The test entitlement remains active only until the finite end above.
+**Local PostgreSQL (real migrations, synthetic data)**: `tests/database/public-pharmacy.test.mjs` 9/9 (IL forced and strict, ID-only/wrong code/wrong ID indistinguishable, one prescription per code, anon has no table/legacy-RPC access, confirmations, single completion, replay, receipt recovery, 3-way race → one dispensation, cancelled/expired-lookup rejection, per-ID/per-client/login budgets, `Prefer` header can't roll back budgets). Existing clinical/pharmacy/issuance suites and the redesign suites (pinned to migrations ≤ `20261106120000`, since they test the superseded ID-search path) — results: clinical suite (foundation, drafts, issuance, pharmacy, HTTP, types check) 72/72, redesign suites 12/12, generated-types check matches.
+**Local unit**: `tests/experience-validation.test.mjs` 5/5 (ID, code, username mapping, payload strictness).
+**Browser, mocked API (local `next start`)**: `tests/public-flow.spec.ts` 16/16: sign-in screen (no OTP/email field, RTL/LTR), redirect when signed out, doctor/portal at 360/768/1440px in he and en with no horizontal overflow and no selects, uncertain issue/dispense reuse one request id, receipt shows the code, inactive entitlement blocks issue, dispensed/cancelled/expired/not-found states. The doctor screen is rendered through the local-only `/dev-preview/doctor` (requires `RX_UI_PREVIEW=1`; 404 otherwise) because the real page needs a session.
+**Typecheck / lint / build**: pass (lint: `npx eslint src tests scripts`; the untracked `.claude/` skill files raise unrelated warnings in repo-wide `npm run lint`).
+**Hosted**: only the read-only migration list above. **Not run**: real username sign-in, hosted public RPCs, legacy Playwright specs that use email login or real accounts (`authentication.spec.ts`, `doctor-interface.spec.ts`, `membership-access.spec.ts`, `draft-*`); they predate this change and need updating when real test credentials are available.
 
 ## Changed files
 
-- New `src/lib/i18n/{core,client,server}` modules and `he.json`, `en.json`, `sources.json` dictionaries; `src/app/layout.tsx` metadata/provider/font wiring.
-- Doctor/pharmacy/login/shared/session components and legacy record/document views; server-page UI text wrappers; `src/app/{globals,experience}.css`; UI-only date/number formatting helpers in `src/lib/mock-data.ts` (fixture/clinical contents retained).
-- Experience and legacy prescription API response localization, restricted to system `message`/`errors` fields, never clinical `result` data.
-- Font dependency/lockfile, localization script entry and tests; localized selectors in focused experience tests.
-- Prepared Auth template/operator tool and bounded hosted acceptance operator script; this handoff. The reviewed migration bytes are unchanged. Pre-existing unrelated local changes and historical hosted scripts were preserved and not executed.
+Migration; `src/lib/{auth/{actions,username}.ts,experience/contracts.ts}`; `src/app/{api/experience/route.ts,page.tsx,portal/page.tsx,login via components,layout.tsx,rx.css,dev-preview/doctor/page.tsx}`; `src/components/{rx/*,login-form.tsx,session-controls.tsx}`; i18n he/en (+90 `rx_*` keys); regenerated `src/types/database.ts`; tests listed above; `playwright.config.ts` (preview env); removed `prescription-experience.tsx`, `experience.css`, `passwordless.ts`, `experience.spec.ts`, `localization.spec.ts` (superseded). Unrelated local files (`.claude/`, phase5b scripts/SQL) were left as they were.
 
-No clinical values, national IDs, OTPs, passwords, sessions or provider error payloads are logged by the application or stored by the language system. Existing UUID-only recovery storage remains. No backup/disaster-recovery work was initiated. No legal digital-signature, real-billing, production-readiness or hosted end-to-end claim is made.
+## Earlier state (2026-11-06, still true)
 
-## Running local review and concrete next step
+Eight migrations are applied on `fckdsiozmufyhbnignet` (last: `20261106120000_multiclinic_form.sql`, SHA-256 `EA53D97B0249101EE2858EAD6A773D046DB3B4418E305FC6AB74A791E883260A`). Clinic memberships, entitlement (a seven-day test grant to the designated clinic ending 2026-11-13 02:50 UTC, not evidence of payment), clinic RLS, atomic form issuance with receipt recovery and the pharmacy reference lookup/dispense safeguards exist there. Custom SMTP/email templates were never configured (free tier), which is why the OTP flow was abandoned. Existing pharmacy accounts and the legacy doctor were not changed. No backup/DR work was started.
 
-The local production server is left running at:
+## Running locally
 
-- Doctor form: **http://127.0.0.1:3210/**
-- Pharmacy portal: **http://127.0.0.1:3210/portal**
-- Existing pharmacy sign-in: **http://127.0.0.1:3210/login**
-
-Doctor and portal browser panels were requested through Codex; the app returned queued openings. The URLs remain directly usable.
-
-The remaining action is to configure an existing usable SMTP sender privately in this project's Supabase Auth email settings. The approved recipient, finite test period and second-pharmacy authorization have already been supplied; do not ask for them again. No passwords or keys are needed in chat.
-
-Once SMTP is configured, apply only the prepared Auth changes, verify the code template, enable the server-only passwordless flag and run the actual email delivery/private code-entry check using the existing approval. The authenticated hosted clinical scenario above does not need duplicate prescriptions. Do not reapply the already applied migration, reset passwords, deploy or create new cloud resources. Public doctor signup remains a verification/onboarding request requiring operator approval and entitlement; unrestricted signup is disabled.
+`RX_UI_PREVIEW=1 npm run start -- --hostname 127.0.0.1 --port 3210` → Pharmacy http://127.0.0.1:3210/portal, doctor sign-in http://127.0.0.1:3210/login, doctor workspace preview http://127.0.0.1:3210/dev-preview/doctor (mocked/unauthenticated; the real `/` needs a provisioned doctor).
