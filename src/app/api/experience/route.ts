@@ -212,11 +212,11 @@ export async function POST(request: Request) {
           p_confirmed: true,
         })
         .abortSignal(AbortSignal.timeout(10000));
-      const issued = result.data as { id?: string; code?: string } | null;
-      if (!result.error && !issued?.code && issued?.id)
+      const issued = result.data as { id?: string } | null;
+      if (!result.error && issued?.id)
         result = {
           ...result,
-          data: { ...issued, code: await reveal(issued.id) },
+          data: { ...issued, accessCode: await reveal(issued.id) },
         };
     } else if (
       input.operation === "recoverIssue" &&
@@ -229,7 +229,7 @@ export async function POST(request: Request) {
       const recovered = result.data as { id?: string; prescription_id?: string } | null;
       const id = recovered?.prescription_id ?? recovered?.id;
       if (!result.error && id)
-        result = { ...result, data: { ...recovered, code: await reveal(id) } };
+        result = { ...result, data: { ...recovered, accessCode: await reveal(id) } };
     } else return failure("22023");
     const data = result.data as { code?: string } | null;
     if (result.error || data?.code)

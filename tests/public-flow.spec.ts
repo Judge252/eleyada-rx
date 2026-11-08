@@ -18,7 +18,7 @@ const issued = {
   clinic_name: doctor.clinic_name,
   issued_at: "2026-11-06T10:00:00Z",
   expires_at: "2026-11-13T10:00:00Z",
-  code: CODE,
+  accessCode: CODE,
 };
 const eligible = {
   state: "eligible",

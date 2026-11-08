@@ -26,7 +26,7 @@ export type Receipt = {
   doctor_name?: string;
   clinic_name?: string;
   prescription_id?: string;
-  code?: string;
+  accessCode?: string;
   state?: string;
   dispensed_at?: string;
   replayed?: boolean;

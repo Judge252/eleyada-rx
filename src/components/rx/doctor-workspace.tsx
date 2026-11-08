@@ -421,7 +421,7 @@ export function DoctorWorkspace() {
           <Notice tone="ok">
             <strong>{t("rx_receipt_title")}</strong>
           </Notice>
-          {!receipt.code && <Notice tone="warn">{t("rx_code_missing")}</Notice>}
+          {!receipt.accessCode && <Notice tone="warn">{t("rx_code_missing")}</Notice>}
           {review && (
             <PrescriptionSheet
               data={{
@@ -433,7 +433,7 @@ export function DoctorWorkspace() {
                 patientId: review.identifier,
                 items: review.items,
                 notes: review.notes,
-                code: receipt.code,
+                code: receipt.accessCode,
               }}
             />
           )}
@@ -441,7 +441,7 @@ export function DoctorWorkspace() {
           <p className="cx-hint cx-noprint">{t("rx_pdf_hint")}</p>
           <div className="cx-actions">
             <SavePdfButton />
-            {!receipt.code && (
+            {!receipt.accessCode && (
               <button
                 className="cx-btn is-secondary"
                 disabled={busy}
