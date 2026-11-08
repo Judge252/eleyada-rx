@@ -9,12 +9,12 @@ import {
   type PrescriberContext,
   type Receipt,
 } from "@/lib/experience/contracts";
+import { PrescriptionSheet, SavePdfButton } from "./prescription-sheet";
 import {
   Notice,
   Shell,
   api,
   clearRequest,
-  formatDate,
   rememberRequest,
 } from "./shell";
 
@@ -33,7 +33,7 @@ const emptyMedicine = (key: number): Medicine => ({
 const blankPatient = { name: "", identifier: "", notes: "" };
 
 export function DoctorWorkspace() {
-  const { t, locale } = useI18n();
+  const { t } = useI18n();
   const [context, setContext] = useState<PrescriberContext>({
     state: "unauthorized",
   });
@@ -421,37 +421,26 @@ export function DoctorWorkspace() {
           <Notice tone="ok">
             <strong>{t("rx_receipt_title")}</strong>
           </Notice>
-          <h2>{t("rx_code_label")}</h2>
-          {receipt.code ? (
-            <bdi className="cx-code cx-mono" dir="ltr">
-              {receipt.code}
-            </bdi>
-          ) : (
-            <Notice tone="warn">{t("rx_code_missing")}</Notice>
+          {!receipt.code && <Notice tone="warn">{t("rx_code_missing")}</Notice>}
+          {review && (
+            <PrescriptionSheet
+              data={{
+                clinic: receipt.clinic_name ?? context.clinic_name,
+                doctor: receipt.doctor_name ?? context.doctor_name,
+                issuedAt: receipt.issued_at,
+                expiresAt: receipt.expires_at,
+                patientName: review.name,
+                patientId: review.identifier,
+                items: review.items,
+                notes: review.notes,
+                code: receipt.code,
+              }}
+            />
           )}
-          <p className="cx-hint">{t("rx_code_help")}</p>
-          <dl className="cx-dl">
-            <dt>{t("rx_prescriber")}</dt>
-            <dd>
-              {receipt.doctor_name ?? context.doctor_name} ·{" "}
-              {receipt.clinic_name ?? context.clinic_name}
-            </dd>
-            <dt>{t("rx_issued_at")}</dt>
-            <dd>{formatDate(receipt.issued_at, locale)}</dd>
-            <dt>{t("rx_valid_until")}</dt>
-            <dd>{formatDate(receipt.expires_at, locale)}</dd>
-            <dt>{t("rx_ref")}</dt>
-            <dd>
-              <bdi className="cx-mono">{receipt.id}</bdi>
-            </dd>
-          </dl>
+          <p className="cx-hint cx-noprint">{t("rx_code_help")}</p>
+          <p className="cx-hint cx-noprint">{t("rx_pdf_hint")}</p>
           <div className="cx-actions">
-            <button
-              className="cx-btn is-secondary"
-              onClick={() => window.print()}
-            >
-              {t("rx_print")}
-            </button>
+            <SavePdfButton />
             {!receipt.code && (
               <button
                 className="cx-btn is-secondary"

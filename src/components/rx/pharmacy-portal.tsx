@@ -7,6 +7,7 @@ import {
   type Receipt,
   type Selection,
 } from "@/lib/experience/contracts";
+import { PrescriptionSheet, SavePdfButton, type SheetData } from "./prescription-sheet";
 import {
   Notice,
   Shell,
@@ -25,7 +26,6 @@ export function PharmacyPortal() {
   const [identifier, setIdentifier] = useState("");
   const [code, setCode] = useState("");
   const [selected, setSelected] = useState<Eligible | null>(null);
-  const [ended, setEnded] = useState("");
   const [identityOk, setIdentityOk] = useState(false);
   const [fullOk, setFullOk] = useState(false);
   const [label, setLabel] = useState("");
@@ -33,6 +33,7 @@ export function PharmacyPortal() {
   const [feedback, setFeedback] = useState("");
   const [uncertain, setUncertain] = useState(false);
   const [receipt, setReceipt] = useState<Receipt | null>(null);
+  const [view, setView] = useState<SheetData | null>(null);
   const request = useRef<string | null>(null);
   const lookupId = useRef<string | null>(null);
   const heading = useRef<HTMLHeadingElement>(null);
@@ -47,9 +48,10 @@ export function PharmacyPortal() {
   async function find(e: FormEvent) {
     e.preventDefault();
     setFeedback("");
-    setEnded("");
     setSelected(null);
     setReceipt(null);
+    setView(null);
+    const proof = lookupInput({ identifier, code });
     if (!lookupInput({ identifier, code })) {
       setFormError(true);
       setFeedback(messages.validation);
@@ -60,19 +62,37 @@ export function PharmacyPortal() {
     const reply = await api({ operation: "lookup", identifier, code });
     setBusy(false);
     const result = reply.result as
-      | ({ state?: string } & Partial<Eligible>)
+      | (Partial<Eligible> & {
+          state?: string;
+          doctor_name?: string;
+          clinic_name?: string;
+          dispensed_at?: string;
+        })
       | undefined;
-    if (result?.state === "eligible") {
-      setSelected(result as Eligible);
-      setIdentityOk(false);
-      setFullOk(false);
-      requestAnimationFrame(() => heading.current?.focus());
-    } else if (result?.state && END_STATES.includes(result.state))
-      setEnded(result.state);
-    else setFeedback(reply.message ?? messages.unavailable);
+    if (result?.patient && result.items && proof) {
+      const ended = END_STATES.includes(result.state ?? "");
+      setView({
+        clinic: result.clinic_name,
+        doctor: result.doctor_name,
+        issuedAt: result.issued_at,
+        expiresAt: result.expires_at,
+        patientName: result.patient.name,
+        patientId: proof.identifier,
+        items: result.items,
+        status: ended ? (result.state as SheetData["status"]) : undefined,
+        dispensedAt: result.dispensed_at,
+      });
+      if (result.state === "eligible") {
+        setSelected(result as Eligible);
+        setIdentityOk(false);
+        setFullOk(false);
+        requestAnimationFrame(() => heading.current?.focus());
+      }
+    } else setFeedback(reply.message ?? messages.unavailable);
   }
   function finish(r: Receipt) {
     setReceipt(r);
+    setView((v) => (v ? { ...v, status: "dispensed", dispensedAt: r.dispensed_at } : v));
     setUncertain(false);
     setFeedback("");
     setSelected(null);
@@ -125,7 +145,7 @@ export function PharmacyPortal() {
     setCode("");
     setSelected(null);
     setReceipt(null);
-    setEnded("");
+    setView(null);
     setFeedback("");
     setUncertain(false);
   }
@@ -137,8 +157,7 @@ export function PharmacyPortal() {
       {feedback && (
         <Notice tone={uncertain ? "warn" : "error"}>{t(feedback)}</Notice>
       )}
-      {ended && <Notice tone="warn">{t(`rx_state_${ended}`)}</Notice>}
-      {!selected && !receipt && (
+      {!view && !receipt && (
         <form className="cx-panel" onSubmit={find} noValidate>
           <div className="cx-grid">
             <label className="cx-field" htmlFor="ph-id">
@@ -179,57 +198,25 @@ export function PharmacyPortal() {
           </div>
         </form>
       )}
-      {selected && (
-        <section className="cx-panel" aria-labelledby="ph-review">
+      {view && (
+        <section className="cx-panel">
+          <PrescriptionSheet data={view} />
+          <div className="cx-actions cx-noprint">
+            <SavePdfButton />
+            {!selected && !receipt && (
+              <button className="cx-btn" onClick={reset}>
+                {t("rx_start_over")}
+              </button>
+            )}
+          </div>
+          <p className="cx-hint cx-noprint">{t("rx_pdf_hint")}</p>
+        </section>
+      )}
+      {selected && !receipt && (
+        <section className="cx-panel cx-noprint" aria-labelledby="ph-review">
           <h2 id="ph-review" ref={heading} tabIndex={-1}>
             {t("rx_ph_review")}
           </h2>
-          <dl className="cx-dl">
-            <dt>{t("rx_patient")}</dt>
-            <dd>{selected.patient.name}</dd>
-            <dt>{t("rx_issued_at")}</dt>
-            <dd>{formatDate(selected.issued_at, locale)}</dd>
-            <dt>{t("rx_valid_until")}</dt>
-            <dd>{formatDate(selected.expires_at, locale)}</dd>
-          </dl>
-          {selected.items.map((m, i) => (
-            <div className="cx-med-row" key={i}>
-              <h3 className="cx-med-title">
-                {t("rx_med_n")} {i + 1}
-              </h3>
-              <dl className="cx-dl">
-                <dt>{t("rx_med_name")}</dt>
-                <dd>
-                  <bdi>{m.medication_name}</bdi>
-                </dd>
-                <dt>{t("rx_med_quantity")}</dt>
-                <dd>{m.quantity}</dd>
-                {(
-                  [
-                    ["rx_med_strength", m.strength],
-                    ["rx_med_dose", m.dose],
-                    ["rx_med_frequency", m.frequency],
-                    ["rx_med_duration", m.duration],
-                  ] as const
-                )
-                  .filter(([, value]) => value && value !== "-")
-                  .map(([label, value]) => (
-                    <div className="cx-dl-row" key={label}>
-                      <dt>{t(label)}</dt>
-                      <dd>
-                        <bdi>{value}</bdi>
-                      </dd>
-                    </div>
-                  ))}
-                {m.special_instructions && (
-                  <>
-                    <dt>{t("rx_instructions")}</dt>
-                    <dd>{m.special_instructions}</dd>
-                  </>
-                )}
-              </dl>
-            </div>
-          ))}
           <label className="cx-check">
             <input
               type="checkbox"

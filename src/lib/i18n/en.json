@@ -794,5 +794,11 @@
   "rx_no_receipt": "No confirmed receipt yet. Keep the same request and do not assume it succeeded.",
   "rx_qty": "Quantity",
   "rx_footer": "Internal pilot. Synthetic data only.",
-  "rx_instructions": "Instructions"
+  "rx_instructions": "Instructions",
+  "rx_sheet_title": "Electronic prescription",
+  "rx_save_pdf": "Save as PDF / Print",
+  "rx_pdf_hint": "In the print dialog choose \"Save as PDF\". The file is made in your browser from the permanent record; no extra file is stored on the server.",
+  "rx_dispensed_on": "Dispensed on",
+  "rx_notes_title": "Notes",
+  "rx_sheet_footer": "Generated from the Clinic RX electronic prescription record."
 }

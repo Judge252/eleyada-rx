@@ -85,4 +85,62 @@ begin
    and exists(select 1 from rx_private.patient_identities i where i.patient_id=p.patient_id and i.country='IL' and i.document_type='national_id' and i.identifier=nid);
 end;
 $$;
+
+-- Printable prescription sheet: the public lookup also returns the doctor and clinic names (display text only).
+create function rx_private.public_sheet(p_id uuid) returns jsonb
+language sql stable security definer set search_path='' as $$
+  select jsonb_build_object('doctor_name',coalesce(f.result->>'doctor_name',d.display_name),'clinic_name',coalesce(f.result->>'clinic_name',c.name))
+  from public.prescriptions p
+  left join public.prescribers d on d.user_id=p.doctor_user_id
+  left join rx_private.patient_clinics pc on pc.patient_id=p.patient_id
+  left join public.clinics c on c.id=pc.clinic_id
+  left join rx_private.form_receipts f on f.prescription_id=p.id
+  where p.id=p_id;
+$$;
+revoke all on function rx_private.public_sheet(uuid) from public,anon,authenticated,service_role;
+grant execute on function rx_private.public_sheet(uuid) to rx_public_executor;
+grant rx_public_executor to current_user with inherit false,set true;
+grant create on schema public to rx_public_executor;
+set local role rx_public_executor;
+create or replace function public.public_lookup_prescription(p_identifier text,p_code text,p_client text default null) returns jsonb
+language plpgsql volatile security definer set search_path='' set timezone='UTC' set lock_timeout='3s' set statement_timeout='8s' as $$
+declare detail jsonb; sheet jsonb; nid text; resolved record; p record; token uuid; completion timestamptz; checked timestamptz; items jsonb; patient jsonb; sid text;
+begin
+  perform set_config('response.headers','[{"Cache-Control":"private, no-store, max-age=0"},{"Pragma":"no-cache"}]',true);
+  -- Preference overrides (e.g. tx=rollback) could roll back budgets while returning data.
+  if nullif(btrim(coalesce(nullif(current_setting('request.headers',true),'')::jsonb->>'prefer','')),'') is not null then
+    raise exception 'Request preferences are not supported' using errcode='42501';
+  end if;
+  begin
+    if not rx_private.consume_public_limit('public_lookup_global','all',2000,interval '1 hour') then return rx_private.public_failure('PT429'); end if;
+    if p_client is not null and p_client ~ '^[0-9a-f]{64}$' and not rx_private.consume_public_limit('public_lookup_client',p_client,40,interval '1 hour') then return rx_private.public_failure('PT429'); end if;
+    begin nid:=rx_private.normalize_il_id(p_identifier);
+    exception when invalid_parameter_value then return rx_private.public_failure('PT404'); end;
+    sid:=rx_private.public_digest('id|'||nid);
+    -- Per-ID budget counts every attempt (valid or not) before proof is checked.
+    if not rx_private.consume_public_limit('public_lookup_id',sid,15,interval '1 hour') then return rx_private.public_failure('PT429'); end if;
+    begin select * into resolved from rx_private.public_resolve(p_identifier,p_code);
+    exception when invalid_parameter_value then return rx_private.public_failure('PT404'); end;
+    if not found then return rx_private.public_failure('PT404'); end if;
+  exception when sqlstate 'PT503' then return rx_private.public_failure('PT503');
+  end;
+  perform set_config('rx.public_rx',resolved.id::text,true);
+  sheet:=rx_private.public_sheet(resolved.id);
+  insert into rx_private.public_lookups(prescription_id,expected_version) values(resolved.id,resolved.version) returning id into token;
+  select id,patient_id,status,updated_at,issued_at,expires_at into p from public.prescriptions where id=resolved.id for update;
+  checked:=clock_timestamp();
+  select dispensed_at into completion from public.dispensations where prescription_id=p.id;
+  select jsonb_build_object('name',name) into patient from public.patients where id=p.patient_id;
+  select jsonb_agg(jsonb_build_object('medication_name',medication_name,'strength',strength,'dose',dose,'frequency',frequency,'duration',duration,'quantity',quantity,'special_instructions',special_instructions) order by sort_order,id) into items from public.prescription_items where prescription_id=p.id;
+  -- Proof holders can always re-open the sheet (print/PDF) for any issued prescription; only an eligible one can be dispensed.
+  detail:=jsonb_build_object('issued_at',p.issued_at,'expires_at',p.expires_at,'database_time',checked,'patient',patient,'items',items,'doctor_name',sheet->>'doctor_name','clinic_name',sheet->>'clinic_name');
+  if completion is not null then return detail||jsonb_build_object('state','dispensed','dispensed_at',completion); end if;
+  if p.status='cancelled' then return detail||jsonb_build_object('state','cancelled'); end if;
+  if p.status<>'issued' or p.expires_at is null or p.expires_at<=checked then return detail||jsonb_build_object('state','expired'); end if;
+  return detail||jsonb_build_object('state','eligible','prescription_id',p.id,'lookup_id',token,'confirmation_expires_at',(select expires_at from rx_private.public_lookups where id=token));
+end;
+$$;
+reset role;
+revoke create on schema public from rx_public_executor;
+revoke rx_public_executor from current_user;
 commit;

@@ -191,10 +191,14 @@ test("national ID alone, wrong code, wrong ID and malformed input are indistingu
   assert.equal(ok.state, "eligible");
   assert.equal(ok.prescription_id, r.id);
   assert.equal(ok.patient.name, "SYNTHETIC SUBJECT");
+  assert.equal(ok.doctor_name, "SYNTHETIC DOCTOR");
+  assert.equal(ok.clinic_name, "SYNTHETIC CLINIC");
   assert.equal(JSON.stringify(ok).includes(ID), false);
   assert.deepEqual(Object.keys(ok).sort(), [
+    "clinic_name",
     "confirmation_expires_at",
     "database_time",
+    "doctor_name",
     "expires_at",
     "issued_at",
     "items",
@@ -341,7 +345,10 @@ test("cancelled prescriptions cannot be dispensed after lookup; expired lookups 
     "doctor",
   );
   assert.equal((await dispense(lc)).code, "PT409");
-  assert.equal((await lookup(ID, c1.code)).state, "cancelled");
+  const cancelled = await lookup(ID, c1.code);
+  assert.equal(cancelled.state, "cancelled");
+  assert.equal(cancelled.patient.name, "SYNTHETIC SUBJECT");
+  assert.equal(cancelled.lookup_id, undefined);
   const e1 = await issue();
   const le = await lookup(ID, e1.code);
   // Direct owner-side backdating (test-only; trigger bypass) makes the confirmation expire without touching the prescription.
