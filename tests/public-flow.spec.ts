@@ -3,7 +3,7 @@
 import { test, expect, type Page } from "@playwright/test";
 
 const BASE = "http://127.0.0.1:3107";
-const CODE = "RX1-K1-" + "ABCD-".repeat(7) + "ABCD";
+const CODE = "123456";
 const doctor = {
   state: "verified",
   doctor_id: "00000000-0000-4000-8000-000000000001",
@@ -18,7 +18,7 @@ const issued = {
   clinic_name: doctor.clinic_name,
   issued_at: "2026-11-06T10:00:00Z",
   expires_at: "2026-11-13T10:00:00Z",
-  reference: CODE,
+  code: CODE,
 };
 const eligible = {
   state: "eligible",
@@ -106,6 +106,7 @@ for (const lang of ["he", "en"] as const)
       await page.goto("/dev-preview/doctor");
       await expect(page.locator("#patient-id")).toBeVisible();
       await expect(page.locator("main select")).toHaveCount(0);
+      await expect(page.locator("#med-1-strength, #med-1-dose, #med-1-frequency, #med-1-duration")).toHaveCount(0);
       await expect(page.locator("html")).toHaveAttribute("dir", lang === "he" ? "rtl" : "ltr");
       expect(await noOverflow(page)).toBe(true);
       await page.goto("/portal");
@@ -133,15 +134,8 @@ test("doctor: validate, review, uncertain issue keeps one request, receipt shows
   await expect(page.locator(".cx-notice[role=alert]")).toBeVisible();
   await page.locator("#patient-name").fill("Synthetic Patient");
   await page.locator("#patient-id").fill("٠٠٠۰۱۲۳۴۵");
-  for (const [field, value] of Object.entries({
-    name: "Synthetic אקמול",
-    strength: "10 mg",
-    dose: "1",
-    frequency: "daily",
-    duration: "5 days",
-    quantity: "5",
-  }))
-    await page.locator(`#med-1-${field}`).fill(value);
+  await page.locator("#med-1-name").fill("Synthetic אקמול");
+  await page.locator("#med-1-quantity").fill("5");
   await page.getByRole("button", { name: "Review prescription", exact: true }).click();
   await expect(page.getByText("000012345", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Confirm and issue prescription" }).click();
@@ -161,8 +155,7 @@ test("doctor with inactive entitlement cannot confirm issuance", async ({ page }
   await page.goto("/dev-preview/doctor");
   await page.locator("#patient-name").fill("Synthetic Patient");
   await page.locator("#patient-id").fill("000012345");
-  for (const f of ["name", "strength", "dose", "frequency", "duration"])
-    await page.locator(`#med-1-${f}`).fill("x");
+  await page.locator("#med-1-name").fill("x");
   await page.locator("#med-1-quantity").fill("1");
   await page.getByRole("button", { name: "Review prescription", exact: true }).click();
   await expect(page.getByRole("button", { name: "Confirm and issue prescription" })).toBeDisabled();
@@ -187,9 +180,11 @@ test("pharmacy: ID alone is blocked client-side; ID + code → review → both c
   await page.getByRole("button", { name: "Open prescription" }).click();
   await expect(page.locator(".cx-notice[role=alert]")).toBeVisible();
   expect(calls.filter((c) => c.operation === "lookup")).toHaveLength(0);
-  await page.locator("#ph-code").fill(CODE.toLowerCase());
+  await page.locator("#ph-code").fill(CODE);
   await page.getByRole("button", { name: "Open prescription" }).click();
   await expect(page.getByText("Synthetic Patient")).toBeVisible();
+  await expect(page.getByText("Medication name")).toBeVisible();
+  await expect(page.getByText("Quantity", { exact: true })).toBeVisible();
   const confirm = page.getByRole("button", { name: "Confirm full dispensing" });
   await expect(confirm).toBeDisabled();
   await page.getByLabel(/independently verified/).check();

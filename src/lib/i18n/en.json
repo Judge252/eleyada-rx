@@ -759,7 +759,7 @@
   "rx_uncertain": "The result is not confirmed. Recover the receipt or retry the same request; do not start a new one.",
   "rx_receipt_title": "Prescription issued",
   "rx_code_label": "Patient access code",
-  "rx_code_help": "Give this code to the patient. The pharmacy needs the code together with the ID number to open the prescription.",
+  "rx_code_help": "Give the patient this 6-digit code. The pharmacy needs the code together with the ID number to open the prescription.",
   "rx_code_missing": "The code is not available right now. Recover the receipt.",
   "rx_issued_at": "Issued",
   "rx_valid_until": "Valid until",
@@ -768,13 +768,13 @@
   "rx_print": "Print",
   "rx_new": "New prescription",
   "rx_ph_title": "Find a prescription",
-  "rx_ph_lede": "Enter the patient's ID number and the access code the patient holds. No account is needed.",
+  "rx_ph_lede": "Enter the patient's ID number and the 6-digit access code the patient holds. No account is needed.",
   "rx_ph_privacy": "An ID number alone reveals nothing. Only the one prescription matching both is shown, with no medical history.",
   "rx_access_code": "Prescription access code",
   "rx_find": "Open prescription",
   "rx_finding": "Checking…",
   "rx_msg_not_found": "No available prescription matches this ID and code. Check the details and try again.",
-  "rx_msg_validation": "Check the details. ID: 9 digits. Code: RX1-K1-… format.",
+  "rx_msg_validation": "Check the details. ID: 9 digits. Access code: 6 digits.",
   "rx_state_dispensed": "This prescription has already been dispensed.",
   "rx_state_cancelled": "This prescription was cancelled by the prescriber and cannot be dispensed.",
   "rx_state_expired": "This prescription has expired.",
@@ -793,5 +793,6 @@
   "rx_start_over": "Look up another",
   "rx_no_receipt": "No confirmed receipt yet. Keep the same request and do not assume it succeeded.",
   "rx_qty": "Quantity",
-  "rx_footer": "Internal pilot. Synthetic data only."
+  "rx_footer": "Internal pilot. Synthetic data only.",
+  "rx_instructions": "Instructions"
 }

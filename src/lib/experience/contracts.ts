@@ -26,7 +26,7 @@ export type Receipt = {
   doctor_name?: string;
   clinic_name?: string;
   prescription_id?: string;
-  reference?: string;
+  code?: string;
   state?: string;
   dispensed_at?: string;
   replayed?: boolean;
@@ -51,11 +51,17 @@ export function normalizeIsraeliId(value: unknown): string | null {
     );
   return /^[0-9]{9}$/.test(id) ? id : null;
 }
-// Patient-held prescription access code (the existing RX1 reference). Spaces/hyphens/case are cosmetic.
+// Patient-held access code: six digits (Arabic-Indic/Persian digits converted), or the older long RX1 reference.
 export function normalizeAccessCode(value: unknown): string | null {
   if (typeof value !== "string" || value.length > 80) return null;
-  const code = value.replace(/[ -]/g, "").toUpperCase();
-  return /^RX1K1[0123456789ABCDEFGHJKMNPQRSTVWXYZ]{32}$/.test(code)
+  const code = value
+    .replace(/[ -]/g, "")
+    .toUpperCase()
+    .replace(/[٠-٩۰-۹]/g, (c) =>
+      String(c.charCodeAt(0) - (c <= "٩" ? 1632 : 1776)),
+    );
+  return /^[0-9]{6}$/.test(code) ||
+    /^RX1K1[0123456789ABCDEFGHJKMNPQRSTVWXYZ]{32}$/.test(code)
     ? code
     : null;
 }

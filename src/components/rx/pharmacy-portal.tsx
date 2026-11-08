@@ -159,11 +159,12 @@ export function PharmacyPortal() {
               <input
                 id="ph-code"
                 className="cx-input cx-ltr cx-mono"
+                inputMode="numeric"
                 autoComplete="off"
                 autoCapitalize="characters"
                 spellCheck={false}
                 maxLength={80}
-                placeholder="RX1-K1-XXXX-XXXX-…"
+                placeholder="123456"
                 value={code}
                 aria-invalid={formError}
                 onChange={(e) => setCode(e.target.value)}
@@ -193,16 +194,40 @@ export function PharmacyPortal() {
           </dl>
           {selected.items.map((m, i) => (
             <div className="cx-med-row" key={i}>
-              <strong>
-                <bdi>
-                  {m.medication_name} · {m.strength}
-                </bdi>
-              </strong>
-              <span>
-                {m.dose} · {m.frequency} · {m.duration} · {t("rx_qty")}{" "}
-                {m.quantity}
-              </span>
-              {m.special_instructions && <div>{m.special_instructions}</div>}
+              <h3 className="cx-med-title">
+                {t("rx_med_n")} {i + 1}
+              </h3>
+              <dl className="cx-dl">
+                <dt>{t("rx_med_name")}</dt>
+                <dd>
+                  <bdi>{m.medication_name}</bdi>
+                </dd>
+                <dt>{t("rx_med_quantity")}</dt>
+                <dd>{m.quantity}</dd>
+                {(
+                  [
+                    ["rx_med_strength", m.strength],
+                    ["rx_med_dose", m.dose],
+                    ["rx_med_frequency", m.frequency],
+                    ["rx_med_duration", m.duration],
+                  ] as const
+                )
+                  .filter(([, value]) => value && value !== "-")
+                  .map(([label, value]) => (
+                    <div className="cx-dl-row" key={label}>
+                      <dt>{t(label)}</dt>
+                      <dd>
+                        <bdi>{value}</bdi>
+                      </dd>
+                    </div>
+                  ))}
+                {m.special_instructions && (
+                  <>
+                    <dt>{t("rx_instructions")}</dt>
+                    <dd>{m.special_instructions}</dd>
+                  </>
+                )}
+              </dl>
             </div>
           ))}
           <label className="cx-check">

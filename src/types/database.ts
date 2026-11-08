@@ -491,6 +491,7 @@ export type Database = {
         Returns: boolean;
       };
       reveal_doctor_reference: { Args: { p_id: string }; Returns: Json };
+      reveal_doctor_short_code: { Args: { p_id: string }; Returns: Json };
       save_doctor_draft: {
         Args: {
           p_doctor_notes: string;

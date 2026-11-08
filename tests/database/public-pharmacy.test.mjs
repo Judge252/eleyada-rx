@@ -62,13 +62,19 @@ async function issue(value = payload()) {
       ]),
     "doctor",
   );
-  const code = await tx(
+  const reference = await tx(
     async (c) =>
       (await scalar(c, "select public.reveal_doctor_reference($1)", [r.id]))
         .reference,
     "doctor",
   );
-  return { ...r, code };
+  const code = await tx(
+    async (c) =>
+      (await scalar(c, "select public.reveal_doctor_short_code($1)", [r.id]))
+        .code,
+    "doctor",
+  );
+  return { ...r, code, reference };
 }
 const lookup = (identifier, code, client = null) =>
   anon((c) =>
@@ -297,7 +303,7 @@ test("dispensing needs both confirmations; completes once; label unverified; no 
   );
   assert.equal((await lookup(ID, r.code)).state, "dispensed");
   const legacy = await tx(
-    (c) => scalar(c, "select public.lookup_pharmacy_prescription($1)", [r.code]),
+    (c) => scalar(c, "select public.lookup_pharmacy_prescription($1)", [r.reference]),
     "pharmacist",
   );
   assert.equal(legacy.state, "dispensed");
@@ -380,4 +386,38 @@ test("prefer headers cannot roll back budgets", async () => {
       }),
     (e) => e.code === "42501",
   );
+});
+test("short access code: six digits, stable, per prescription, doctor-only; RX1 reference still works", async () => {
+  const r = await issue();
+  assert.match(r.code, /^[0-9]{6}$/);
+  const again = await tx(
+    async (c) => (await scalar(c, "select public.reveal_doctor_short_code($1)", [r.id])).code,
+    "doctor",
+  );
+  assert.equal(again, r.code);
+  assert.equal((await lookup(ID, r.reference)).prescription_id, r.id);
+  const other = await issue(payload(ID, "SUBJECT B"));
+  assert.notEqual(other.code, r.code);
+  assert.equal((await lookup(ID, other.code)).patient.name, "SUBJECT B");
+  assert.equal((await lookup("111111111", r.code)).code, "PT404");
+  await assert.rejects(
+    () => anon((c) => c.query("select public.reveal_doctor_short_code($1)", [r.id])),
+    (e) => e.code === "42501",
+  );
+  await assert.rejects(
+    () => tx((c) => c.query("select public.reveal_doctor_short_code($1)", [r.id]), "pharmacist"),
+    (e) => e.code === "42501",
+  );
+  const stored = (await db.owner.query("select digest from rx_private.short_codes where prescription_id=$1", [r.id])).rows[0].digest;
+  assert.ok(!stored.includes(r.code) && stored.length === 64);
+});
+test("short-code guessing is capped per ID per day and indistinguishable from a wrong code", async () => {
+  const r = await issue();
+  const wrong = r.code === "000000" ? "000001" : "000000";
+  for (let i = 0; i < 40; i++) {
+    await db.owner.query("update rx_private.access_limits set attempts=0,window_start=clock_timestamp() where scope='public_lookup_id'");
+    assert.deepEqual(await lookup(ID, wrong), failure);
+  }
+  await db.owner.query("delete from rx_private.access_limits where scope='public_lookup_id'");
+  assert.deepEqual(await lookup(ID, r.code), failure);
 });

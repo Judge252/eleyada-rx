@@ -14,7 +14,14 @@ Updated 2026-11-07. Nothing from this update is committed, pushed, deployed or a
 
 `dispensations.pharmacy_id` and `pharmacist_user_id` were `NOT NULL` with a composite FK to `app_users` and a guard trigger requiring an active pharmacist. A public visitor has no verified identity, so the migration (additive) adds `access_method` (`pharmacy_account` default | `public_code`) and `pharmacy_label` (≤120 chars, **unverified** free text), makes the two columns nullable, and adds a check: account rows keep both FKs and no label; public rows have both NULL. Existing rows satisfy it unchanged; the guard trigger skips the pharmacist check only for `public_code`. Consequences: a public completion proves only that someone held the ID + code and ticked both confirmations. It cannot say which pharmacy or pharmacist did it, and the label can be false. Audit rows (`audit_events`) record no actor for it. Per-ID/global budgets limit abuse but allow a determined attacker to lock out lookups for a known ID for up to an hour (per-client buckets are advisory because the anon key is public). Anyone holding a patient's ID **and** code can dispense; the code is the bearer secret, so patients must treat it like the prescription itself.
 
-## Pending hosted migration (not applied)
+## 2026-11-08 update: short code, simpler medication form
+
+- **Access code is now 6 digits** (`reveal_doctor_short_code`, migration below). The doctor receipt shows it; the pharmacy enters ID + code. The long RX1 reference still works. A 6-digit code is guessable by volume, so every short-code attempt also spends a **daily per-ID budget of 40** (plus the hourly 15); exhaustion looks like a wrong code. Residual risk: about 40 guesses/day in 10^6 per ID for the prescription's 7-day life (≈0.03%). Use more digits if that is too weak (one constant plus the regex).
+- **Doctor medication form** collects only name, quantity and optional instructions. The database still requires strength/dose/frequency/duration, so the app stores `-` there. The pharmacy review shows labelled Medication name / Quantity / Instructions (and old strength/dose/etc. only when they hold real values).
+- Migration `20261108120000_short_access_codes.sql`, SHA-256 `F99F80369008262931A571C53CCF3141BA14BF5462A1B9467489E62F5B0CC663`: **not applied** (push blocked by the permission layer). Run `npx supabase db push --linked --yes`. Until then, receipts show no code and the 6-digit lookup does not work. `20261107120000` (hash above) was found applied on the hosted project on 2026-11-08.
+- Local evidence: `public-pharmacy.test.mjs` 11/11, unit 9/9, `public-flow.spec.ts` 16/16, typecheck/lint/build pass.
+
+## Pending hosted migration (first migration, now applied)
 
 | Migration | SHA-256 |
 | --- | --- |

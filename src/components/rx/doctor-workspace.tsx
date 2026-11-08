@@ -21,31 +21,15 @@ import {
 type Medicine = {
   key: number;
   name: string;
-  strength: string;
-  dose: string;
-  frequency: string;
-  duration: string;
   quantity: string;
   instructions: string;
 };
 const emptyMedicine = (key: number): Medicine => ({
   key,
   name: "",
-  strength: "",
-  dose: "",
-  frequency: "",
-  duration: "",
   quantity: "",
   instructions: "",
 });
-const fields = [
-  ["name", "rx_med_name", 200],
-  ["strength", "rx_med_strength", 120],
-  ["dose", "rx_med_dose", 200],
-  ["frequency", "rx_med_frequency", 200],
-  ["duration", "rx_med_duration", 120],
-  ["quantity", "rx_med_quantity", 7],
-] as const;
 const blankPatient = { name: "", identifier: "", notes: "" };
 
 export function DoctorWorkspace() {
@@ -135,10 +119,11 @@ export function DoctorWorkspace() {
       ...patient,
       items: medicines.map((m) => ({
         medication_name: m.name,
-        strength: m.strength,
-        dose: m.dose,
-        frequency: m.frequency,
-        duration: m.duration,
+        // Legacy clinical columns stay mandatory in the database; the form no longer collects them.
+        strength: "-",
+        dose: "-",
+        frequency: "-",
+        duration: "-",
         quantity: Number(m.quantity),
         special_instructions: m.instructions,
       })),
@@ -254,32 +239,50 @@ export function DoctorWorkspace() {
                   {t("rx_med_n")} {i + 1}
                 </legend>
                 <div className="cx-med-grid">
-                  {fields.map(([field, label, max]) => (
-                    <label
-                      className={`cx-field ${field === "name" ? "is-wide" : ""}`}
-                      key={field}
-                      htmlFor={`med-${m.key}-${field}`}
-                    >
-                      <span>{t(label)}</span>
-                      <input
-                        id={`med-${m.key}-${field}`}
-                        className="cx-input"
-                        dir="auto"
-                        maxLength={max}
-                        value={m[field]}
-                        inputMode={field === "quantity" ? "numeric" : undefined}
-                        onChange={(e) =>
-                          setMedicines((rows) =>
-                            rows.map((row) =>
-                              row.key === m.key
-                                ? { ...row, [field]: e.target.value }
-                                : row,
-                            ),
-                          )
-                        }
-                      />
-                    </label>
-                  ))}
+                  <label
+                    className="cx-field is-wide"
+                    htmlFor={`med-${m.key}-name`}
+                  >
+                    <span>{t("rx_med_name")}</span>
+                    <input
+                      id={`med-${m.key}-name`}
+                      className="cx-input"
+                      dir="auto"
+                      maxLength={200}
+                      value={m.name}
+                      onChange={(e) =>
+                        setMedicines((rows) =>
+                          rows.map((row) =>
+                            row.key === m.key
+                              ? { ...row, name: e.target.value }
+                              : row,
+                          ),
+                        )
+                      }
+                    />
+                  </label>
+                  <label
+                    className="cx-field"
+                    htmlFor={`med-${m.key}-quantity`}
+                  >
+                    <span>{t("rx_med_quantity")}</span>
+                    <input
+                      id={`med-${m.key}-quantity`}
+                      className="cx-input cx-ltr"
+                      inputMode="numeric"
+                      maxLength={7}
+                      value={m.quantity}
+                      onChange={(e) =>
+                        setMedicines((rows) =>
+                          rows.map((row) =>
+                            row.key === m.key
+                              ? { ...row, quantity: e.target.value }
+                              : row,
+                          ),
+                        )
+                      }
+                    />
+                  </label>
                   <label
                     className="cx-field is-wide"
                     htmlFor={`med-${m.key}-instructions`}
@@ -372,13 +375,10 @@ export function DoctorWorkspace() {
             <div className="cx-med-row" key={i}>
               <strong>
                 {i + 1}.{" "}
-                <bdi>
-                  {m.medication_name} · {m.strength}
-                </bdi>
+                <bdi>{m.medication_name}</bdi>
               </strong>
               <span>
-                {m.dose} · {m.frequency} · {m.duration} · {t("rx_qty")}{" "}
-                {m.quantity}
+                {t("rx_qty")} {m.quantity}
               </span>
               {m.special_instructions && <div>{m.special_instructions}</div>}
             </div>
@@ -422,9 +422,9 @@ export function DoctorWorkspace() {
             <strong>{t("rx_receipt_title")}</strong>
           </Notice>
           <h2>{t("rx_code_label")}</h2>
-          {receipt.reference ? (
+          {receipt.code ? (
             <bdi className="cx-code cx-mono" dir="ltr">
-              {receipt.reference}
+              {receipt.code}
             </bdi>
           ) : (
             <Notice tone="warn">{t("rx_code_missing")}</Notice>
@@ -452,7 +452,7 @@ export function DoctorWorkspace() {
             >
               {t("rx_print")}
             </button>
-            {!receipt.reference && (
+            {!receipt.code && (
               <button
                 className="cx-btn is-secondary"
                 disabled={busy}

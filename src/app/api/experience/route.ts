@@ -172,10 +172,10 @@ export async function POST(request: Request) {
     let result;
     const reveal = async (id: unknown) => {
       if (typeof id !== "string") return null;
-      const revealed = await client.rpc("reveal_doctor_reference", { p_id: id });
+      const revealed = await client.rpc("reveal_doctor_short_code", { p_id: id });
       return revealed.error
         ? null
-        : ((revealed.data as { reference?: string } | null)?.reference ?? null);
+        : ((revealed.data as { code?: string } | null)?.code ?? null);
     };
     if (input.operation === "context" && exact(["operation"])) {
       result = await client.rpc("get_prescriber_context");
@@ -216,7 +216,7 @@ export async function POST(request: Request) {
       if (!result.error && !issued?.code && issued?.id)
         result = {
           ...result,
-          data: { ...issued, reference: await reveal(issued.id) },
+          data: { ...issued, code: await reveal(issued.id) },
         };
     } else if (
       input.operation === "recoverIssue" &&
@@ -229,7 +229,7 @@ export async function POST(request: Request) {
       const recovered = result.data as { id?: string; prescription_id?: string } | null;
       const id = recovered?.prescription_id ?? recovered?.id;
       if (!result.error && id)
-        result = { ...result, data: { ...recovered, reference: await reveal(id) } };
+        result = { ...result, data: { ...recovered, code: await reveal(id) } };
     } else return failure("22023");
     const data = result.data as { code?: string } | null;
     if (result.error || data?.code)

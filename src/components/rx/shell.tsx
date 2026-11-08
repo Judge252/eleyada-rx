@@ -1,4 +1,5 @@
 "use client";
+import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { useI18n, LanguageSwitcher } from "@/lib/i18n/client";
@@ -84,7 +85,13 @@ export function Shell({
       <header className="cx-header">
         <div className="cx-header-inner">
           <Link href="/" className="cx-brand" dir="ltr">
-            Clinic RX
+            <Image
+              src="/branding/clinic-rx-logo.png"
+              alt="Clinic RX"
+              width={154}
+              height={28}
+              priority
+            />
           </Link>
           <nav className="cx-nav" aria-label={t("rx_main_nav")}>
             <Link

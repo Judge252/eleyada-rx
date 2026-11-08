@@ -43,6 +43,13 @@ test("access code: case, spaces and hyphens are cosmetic; wrong format or alphab
   for (const bad of ["", "RX1-K1-ABCD", CODE.replace("ABCD", "ABCU"), "x".repeat(81), null])
     assert.equal(normalizeAccessCode(bad), null);
 });
+test("six-digit access code: digit forms convert; other lengths rejected", () => {
+  assert.equal(normalizeAccessCode("123456"), "123456");
+  assert.equal(normalizeAccessCode(" ١٢٣٤٥٦ "), "123456");
+  assert.equal(normalizeAccessCode("۱۲۳-۴۵۶"), "123456");
+  for (const bad of ["12345", "1234567", "12345a"]) assert.equal(normalizeAccessCode(bad), null);
+  assert.deepEqual(lookupInput({ identifier: "000012345", code: "000123" }), { identifier: "000012345", code: "000123" });
+});
 test("public lookup input requires BOTH proofs and nothing else; an ID alone is not accepted", () => {
   assert.deepEqual(lookupInput({ identifier: "000012345", code: CODE }), {
     identifier: "000012345",
