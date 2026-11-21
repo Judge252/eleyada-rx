@@ -31,6 +31,7 @@ const eligible = {
   expires_at: "2026-11-13T10:00:00Z",
   items: [
     {
+      id: "00000000-0000-4000-8000-0000000000a1",
       medication_name: "Synthetic אקמול",
       strength: "500 mg",
       dose: "1",
@@ -38,6 +39,28 @@ const eligible = {
       duration: "5d",
       quantity: 10,
       special_instructions: "",
+      filled: 4,
+      remaining: 6,
+    },
+    {
+      id: "00000000-0000-4000-8000-0000000000a2",
+      medication_name: "Synthetic B",
+      strength: "-",
+      dose: "-",
+      frequency: "-",
+      duration: "-",
+      quantity: 2,
+      special_instructions: "",
+      filled: 0,
+      remaining: 2,
+    },
+  ],
+  history: [
+    {
+      at: "2026-11-06T12:00:00Z",
+      pharmacy: "Pharmacy Alpha",
+      complete: false,
+      items: [{ medication_name: "Synthetic אקמול", quantity: 4 }],
     },
   ],
 };
@@ -167,18 +190,29 @@ test("doctor with inactive entitlement cannot confirm issuance", async ({ page }
   await expect(page.getByRole("button", { name: "Confirm and issue prescription" })).toBeDisabled();
   await expect(page.getByText(/subscription is inactive/).first()).toBeVisible();
 });
-test("pharmacy: ID alone is blocked client-side; ID + code → review → both confirmations → one request across uncertainty", async ({
+test("pharmacy: ID alone is blocked; ID + code shows history from another pharmacy; partial fill keeps one request across uncertainty", async ({
   page,
 }) => {
   await language(page, "en");
   const calls: Record<string, unknown>[] = [];
   await mock(page, (input) => {
     calls.push(input);
-    if (input.operation === "lookup") return { result: eligible };
-    if (input.operation === "dispense")
-      return calls.filter((c) => c.operation === "dispense").length === 1
+    if (input.operation === "lookup") return { result: { ...eligible, state: "partial" } };
+    if (input.operation === "fill")
+      return calls.filter((c) => c.operation === "fill").length === 1
         ? { state: "uncertain", message: "not confirmed" }
-        : { result: { state: "dispensed", id: "00000000-0000-4000-8000-000000000006", prescription_id: eligible.prescription_id, dispensed_at: "2026-11-07T10:00:00Z" } };
+        : {
+            result: {
+              state: "partial",
+              id: "00000000-0000-4000-8000-000000000006",
+              prescription_id: eligible.prescription_id,
+              filled_at: "2026-11-07T10:00:00Z",
+              dispensed_at: "2026-11-07T10:00:00Z",
+              pharmacy_label: "Synthetic Pharmacy",
+              completes: false,
+              items: [{ item_id: eligible.items[0].id, medication_name: "Synthetic אקמול", quantity: 3 }],
+            },
+          };
     return { result: null };
   });
   await page.goto("/portal");
@@ -188,26 +222,47 @@ test("pharmacy: ID alone is blocked client-side; ID + code → review → both c
   expect(calls.filter((c) => c.operation === "lookup")).toHaveLength(0);
   await page.locator("#ph-code").fill(CODE);
   await page.getByRole("button", { name: "Open prescription" }).click();
-  await expect(page.getByText("Synthetic Patient")).toBeVisible();
-  await expect(page.getByText("Medication name")).toBeVisible();
-  await expect(page.getByText("Synthetic Clinic")).toBeVisible();
-  await expect(page.getByText("Dr Synthetic").first()).toBeVisible();
-  await expect(page.getByRole("button", { name: "Download PDF" })).toBeVisible();
-  await expect(page.getByText("Quantity", { exact: true })).toBeVisible();
-  const confirm = page.getByRole("button", { name: "Confirm full dispensing" });
-  await expect(confirm).toBeDisabled();
+  await expect(page.locator(".cx-sheet")).toContainText("Synthetic Patient");
+  await expect(page.locator(".cx-sheet")).toContainText("Synthetic Clinic");
+  await expect(page.locator(".cx-sheet")).toContainText("Dr Synthetic");
+  // History from the earlier pharmacy is visible.
+  await expect(page.locator(".cx-history")).toContainText("Pharmacy Alpha");
+  await expect(page.getByText(/Partially dispensed/)).toBeVisible();
+  const submit = page.getByRole("button", { name: "Record dispensing" });
+  await expect(submit).toBeDisabled();
+  const first = page.locator(`#fill-${eligible.items[0].id}`);
+  await first.fill("7");
+  await expect(first).toHaveAttribute("aria-invalid", "true");
+  await first.fill("3");
+  await expect(page.getByText(/Partial dispensing: what is left/)).toBeVisible();
   await page.getByLabel(/independently verified/).check();
-  await expect(confirm).toBeDisabled();
-  await page.getByLabel(/dispensed in full/).check();
   await page.locator("#ph-label").fill("Synthetic Pharmacy");
-  await confirm.click();
+  await submit.click();
   await page.getByRole("button", { name: "Retry the same request" }).click();
-  await expect(page.getByText("Dispensing recorded")).toBeVisible();
-  const sent = calls.filter((c) => c.operation === "dispense");
+  await expect(page.getByText("Partial dispensing recorded")).toBeVisible();
+  await expect(page.locator(".cx-history > li")).toHaveCount(2);
+  const sent = calls.filter((c) => c.operation === "fill");
   expect(sent).toHaveLength(2);
   expect(sent[0].requestId).toBe(sent[1].requestId);
-  expect(sent[0]).toMatchObject({ identityConfirmed: true, fullConfirmed: true, pharmacyLabel: "Synthetic Pharmacy" });
+  expect(sent[0]).toMatchObject({
+    identityConfirmed: true,
+    pharmacyLabel: "Synthetic Pharmacy",
+    items: [{ item_id: eligible.items[0].id, quantity: 3 }],
+  });
+  // "Fill all remaining" would complete the prescription.
   expect(calls.find((c) => c.operation === "lookup")).toMatchObject({ identifier: "000012345" });
+});
+test("pharmacy: fill all remaining announces completion", async ({ page }) => {
+  await language(page, "en");
+  await mock(page, (input) => (input.operation === "lookup" ? { result: eligible } : { result: null }));
+  await page.goto("/portal");
+  await page.locator("#ph-id").fill("000012345");
+  await page.locator("#ph-code").fill(CODE);
+  await page.getByRole("button", { name: "Open prescription" }).click();
+  await page.getByRole("button", { name: "Fill all remaining" }).click();
+  await expect(page.locator(`#fill-${eligible.items[0].id}`)).toHaveValue("6");
+  await expect(page.locator(`#fill-${eligible.items[1].id}`)).toHaveValue("2");
+  await expect(page.getByText(/closes the prescription/)).toBeVisible();
 });
 for (const state of ["dispensed", "cancelled", "expired"])
   test(`pharmacy shows the ${state} prescription sheet read-only, with no dispensing`, async ({ page }) => {
@@ -220,7 +275,7 @@ for (const state of ["dispensed", "cancelled", "expired"])
     await expect(page.locator(".cx-sheet-status")).toBeVisible();
     await expect(page.getByText("Synthetic Patient")).toBeVisible();
     await expect(page.getByRole("button", { name: "Download PDF" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Confirm full dispensing" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Record dispensing" })).toHaveCount(0);
   });
 test("pharmacy not-found and throttled replies are generic", async ({ page }) => {
   await language(page, "en");

@@ -468,11 +468,26 @@ export type Database = {
         };
         Returns: Json;
       };
+      public_fill_prescription: {
+        Args: {
+          p_identity_confirmed: boolean;
+          p_items: Json;
+          p_lookup_id: string;
+          p_pharmacy_label: string;
+          p_prescription_id: string;
+          p_request_id: string;
+        };
+        Returns: Json;
+      };
       public_lookup_prescription: {
         Args: { p_client?: string; p_code: string; p_identifier: string };
         Returns: Json;
       };
       public_recover_dispensing: {
+        Args: { p_lookup_id: string; p_request_id: string };
+        Returns: Json;
+      };
+      public_recover_fill: {
         Args: { p_lookup_id: string; p_request_id: string };
         Returns: Json;
       };

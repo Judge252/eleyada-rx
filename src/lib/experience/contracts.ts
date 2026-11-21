@@ -98,6 +98,71 @@ export function formPayload(value: unknown): FormPayload | null {
 export function validRequestId(value: unknown): value is string {
   return typeof value === "string" && UUID.test(value);
 }
+
+// Pharmacy name as typed at the counter (unverified display text, stored with each fill).
+export function pharmacyLabel(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const label = value.trim();
+  return label.length >= 2 && label.length <= 120 && !/[\u0000-\u001f\u007f]/.test(label)
+    ? label
+    : null;
+}
+export type FillItem = { item_id: string; quantity: number };
+// One fill: what this pharmacy hands out now (1..50 distinct medications, whole positive quantities).
+// Remaining quantities are enforced again in the database under the prescription lock.
+export function fillInput(value: Record<string, unknown>) {
+  const label = pharmacyLabel(value.pharmacyLabel);
+  const items = value.items;
+  if (
+    !label ||
+    !validRequestId(value.requestId) ||
+    !validRequestId(value.lookupId) ||
+    !validRequestId(value.prescriptionId) ||
+    !Array.isArray(items) ||
+    items.length < 1 ||
+    items.length > 50
+  )
+    return null;
+  const clean: FillItem[] = [];
+  for (const item of items) {
+    if (
+      !object(item) ||
+      Object.keys(item).sort().join() !== "item_id,quantity" ||
+      !validRequestId(item.item_id) ||
+      typeof item.quantity !== "number" ||
+      !Number.isSafeInteger(item.quantity) ||
+      item.quantity < 1 ||
+      item.quantity > 1000000
+    )
+      return null;
+    clean.push({ item_id: item.item_id, quantity: item.quantity });
+  }
+  if (new Set(clean.map((i) => i.item_id)).size !== clean.length) return null;
+  return {
+    requestId: value.requestId,
+    lookupId: value.lookupId,
+    prescriptionId: value.prescriptionId,
+    items: clean,
+    pharmacyLabel: label,
+  };
+}
+export type FillHistoryEntry = {
+  at: string;
+  pharmacy: string | null;
+  complete: boolean;
+  items: { medication_name: string; quantity: number }[];
+};
+export type FillReceipt = {
+  state: "partial" | "dispensed";
+  id: string;
+  prescription_id: string;
+  filled_at: string;
+  dispensed_at: string;
+  pharmacy_label: string;
+  completes: boolean;
+  items: { item_id: string; medication_name: string; quantity: number }[];
+  replayed?: boolean;
+};
 export const messages = {
   unauthorized: "يلزم حساب معتمد وجلسة نشطة. أعد التحقق من هويتك.",
   inactive: "الإصدار غير متاح: يلزم تفعيل اشتراك العيادة.",

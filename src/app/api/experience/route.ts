@@ -5,6 +5,7 @@ import { getAccount } from "@/lib/auth/server";
 import { sameOrigin } from "@/lib/issuance/validation";
 import { object } from "@/lib/drafts/validation";
 import {
+  fillInput,
   formPayload,
   lookupInput,
   messages,
@@ -117,33 +118,28 @@ export async function POST(request: Request) {
         return failure(result.error?.code ?? data?.code);
       return response({ result: result.data });
     }
-    if (
-      input.operation === "dispense" &&
-      exact([
-        "operation",
-        "requestId",
-        "lookupId",
-        "prescriptionId",
-        "identityConfirmed",
-        "fullConfirmed",
-        "pharmacyLabel",
-      ]) &&
-      validRequestId(input.requestId) &&
-      validRequestId(input.lookupId) &&
-      validRequestId(input.prescriptionId) &&
-      input.identityConfirmed === true &&
-      input.fullConfirmed === true &&
-      typeof input.pharmacyLabel === "string" &&
-      input.pharmacyLabel.length <= 120
-    ) {
+    if (input.operation === "fill") {
+      const fill =
+        exact([
+          "operation",
+          "requestId",
+          "lookupId",
+          "prescriptionId",
+          "identityConfirmed",
+          "items",
+          "pharmacyLabel",
+        ]) && input.identityConfirmed === true
+          ? fillInput(input)
+          : null;
+      if (!fill) return failure("22023");
       const result = await client
-        .rpc("public_dispense_prescription", {
-          p_request_id: input.requestId,
-          p_lookup_id: input.lookupId,
-          p_prescription_id: input.prescriptionId,
+        .rpc("public_fill_prescription", {
+          p_request_id: fill.requestId,
+          p_lookup_id: fill.lookupId,
+          p_prescription_id: fill.prescriptionId,
           p_identity_confirmed: true,
-          p_full_confirmed: true,
-          p_pharmacy_label: input.pharmacyLabel,
+          p_items: fill.items,
+          p_pharmacy_label: fill.pharmacyLabel,
         })
         .abortSignal(AbortSignal.timeout(10000));
       const data = result.data as { code?: string } | null;
@@ -152,12 +148,12 @@ export async function POST(request: Request) {
       return response({ result: result.data });
     }
     if (
-      input.operation === "recoverDispense" &&
+      input.operation === "recoverFill" &&
       exact(["operation", "requestId", "lookupId"]) &&
       validRequestId(input.requestId) &&
       validRequestId(input.lookupId)
     ) {
-      const result = await client.rpc("public_recover_dispensing", {
+      const result = await client.rpc("public_recover_fill", {
         p_request_id: input.requestId,
         p_lookup_id: input.lookupId,
       });

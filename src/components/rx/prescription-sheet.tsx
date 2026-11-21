@@ -23,8 +23,15 @@ export type SheetData = {
   items: SheetItem[];
   notes?: string;
   code?: string;
-  status?: "dispensed" | "cancelled" | "expired";
+  status?: "dispensed" | "cancelled" | "expired" | "partial";
   dispensedAt?: string;
+  // Pharmacy portal only: what was dispensed, where and when (pharmacy names as entered, unverified).
+  history?: {
+    at: string;
+    pharmacy: string | null;
+    complete: boolean;
+    items: { medication_name: string; quantity: number }[];
+  }[];
 };
 
 // Printable prescription. It is rendered from the permanently stored record on demand, so "Save as PDF" in the
@@ -118,6 +125,37 @@ export function PrescriptionSheet({ data }: { data: SheetData }) {
           <p>{data.notes}</p>
         </>
       )}
+      {data.history && (
+        <>
+          <h2 className="cx-sheet-h">{t("rx_hist_title")}</h2>
+          {data.history.length === 0 ? (
+            <p className="cx-hint">{t("rx_hist_none")}</p>
+          ) : (
+            <ol className="cx-history">
+              {data.history.map((h, i) => (
+                <li key={i}>
+                  <div className="cx-history-head">
+                    <strong>
+                      <bdi>{h.pharmacy || t("rx_hist_unknown_pharmacy")}</bdi>
+                    </strong>
+                    <span>{formatDate(h.at, locale)}</span>
+                    <span className={`cx-state-pill ${h.complete ? "" : "is-off"}`}>
+                      {t(h.complete ? "rx_hist_final" : "rx_hist_partial")}
+                    </span>
+                  </div>
+                  <ul>
+                    {h.items.map((m, j) => (
+                      <li key={j}>
+                        <bdi>{m.medication_name}</bdi> × {m.quantity}
+                      </li>
+                    ))}
+                  </ul>
+                </li>
+              ))}
+            </ol>
+          )}
+        </>
+      )}
       {data.code && (
         <>
           <h2 className="cx-sheet-h">{t("rx_code_label")}</h2>
@@ -150,6 +188,7 @@ async function buildPdf(sheet: HTMLElement): Promise<PdfResult> {
   clone.style.margin = "0";
   clone.style.width = "760px";
   clone.style.maxWidth = "none";
+  clone.classList.add("cx-pdf-render");
   host.appendChild(clone);
   document.body.appendChild(host);
   try {

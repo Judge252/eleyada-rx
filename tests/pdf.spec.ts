@@ -21,7 +21,8 @@ const eligible = {
   patient: { name: "מטופל סינתטי" },
   issued_at: "2026-11-06T10:00:00Z",
   expires_at: "2026-11-13T10:00:00Z",
-  items: [{ medication_name: "אקמול", strength: "500 mg", dose: "1", frequency: "x3", duration: "5d", quantity: 10, special_instructions: "" }],
+  items: [{ id: "00000000-0000-4000-8000-0000000000a1", medication_name: "אקמול", strength: "500 mg", dose: "1", frequency: "x3", duration: "5d", quantity: 10, special_instructions: "", filled: 4, remaining: 6 }],
+  history: [{ at: "2026-11-06T12:00:00Z", pharmacy: "בית מרקחת אלפא", complete: false, items: [{ medication_name: "אקמול", quantity: 4 }] }],
 };
 
 async function mock(page: Page, handler: (input: Record<string, unknown>) => object) {
@@ -92,6 +93,8 @@ for (const width of [1440, 390]) {
     await page.locator("#ph-code").fill(CODE);
     await page.locator("form button[type=submit]").click();
     await expect(page.locator(".cx-sheet")).toContainText("מטופל סינתטי");
+    await expect(page.locator(".cx-sheet")).toContainText("רמלה");
+    await expect(page.locator(".cx-sheet")).toContainText("בית מרקחת אלפא");
     await checkPdf(page);
   });
 }

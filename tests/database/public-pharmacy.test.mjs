@@ -106,7 +106,8 @@ const failure = {
   hint: null,
 };
 before(async () => {
-  db = await startTestDatabase();
+  // Pinned: evidence for the all-or-nothing public flow; partial fills are covered by partial-fills.test.mjs.
+  db = await startTestDatabase({ through: "20261108120000_short_access_codes.sql" });
   const q = (s, a) => db.owner.query(s, a);
   await q("insert into public.clinics(id,name) values($1,'SYNTHETIC CLINIC')", [
     id.clinic,

@@ -528,3 +528,88 @@
 .cx-pdf-actions a.cx-btn {
   text-decoration: none;
 }
+
+/* Dispensing history (sheet + PDF) */
+.cx-history {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+.cx-history > li {
+  border: 1px solid var(--cx-line);
+  border-radius: var(--cx-radius);
+  padding: 10px 12px;
+}
+.cx-history-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+}
+.cx-history-head span:not(.cx-state-pill) {
+  color: var(--cx-muted);
+  font-size: 0.9rem;
+}
+.cx-history ul {
+  margin: 6px 0 0;
+  padding-inline-start: 18px;
+}
+
+/* Partial dispensing form */
+.cx-fill {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.cx-fill-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 2fr) minmax(110px, 1fr);
+  align-items: end;
+  gap: 10px 14px;
+  border: 1px solid var(--cx-line);
+  border-radius: var(--cx-radius);
+  padding: 10px 12px;
+}
+.cx-fill-name {
+  font-weight: 600;
+  align-self: center;
+  overflow-wrap: anywhere;
+}
+.cx-fill-nums {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  margin: 0;
+}
+.cx-fill-nums dt {
+  color: var(--cx-muted);
+  font-size: 0.8rem;
+}
+.cx-fill-nums dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+.cx-fill-input {
+  margin: 0;
+}
+@media (max-width: 599px) {
+  .cx-fill-row {
+    grid-template-columns: 1fr;
+  }
+}
+@media print {
+  .cx-history > li {
+    break-inside: avoid;
+  }
+}
+
+/* The PDF is always laid out at A4 width, so it uses the wide layout even when generated on a phone. */
+.cx-sheet.cx-pdf-render .cx-dl {
+  grid-template-columns: max-content 1fr;
+  gap: 8px 16px;
+}
+.cx-sheet.cx-pdf-render .cx-dl dd {
+  margin-block-end: 0;
+}
