@@ -797,8 +797,14 @@
   "rx_instructions": "הוראות",
   "rx_sheet_title": "מרשם אלקטרוני",
   "rx_save_pdf": "שמירה כ-PDF / הדפסה",
-  "rx_pdf_hint": "בחלון ההדפסה בחרו \"שמירה כ-PDF\". הקובץ נוצר בדפדפן מהרשומה הקבועה; לא נשמר קובץ נוסף בשרת.",
+  "rx_pdf_hint": "ניתן לצפות במרשם או להוריד אותו כקובץ PDF. הקובץ נוצר בדפדפן מהרשומה הקבועה; לא נשמר קובץ נוסף בשרת.",
   "rx_dispensed_on": "נופק בתאריך",
   "rx_notes_title": "הערות",
-  "rx_sheet_footer": "הופק מרשומת המרשם האלקטרוני של Clinic RX."
+  "rx_sheet_footer": "הופק מרשומת המרשם האלקטרוני של Clinic RX.",
+  "rx_pdf_preview": "תצוגה מקדימה של PDF",
+  "rx_pdf_download": "הורדת PDF",
+  "rx_pdf_open": "פתיחת PDF",
+  "rx_pdf_close": "סגירה",
+  "rx_pdf_generating": "מכין PDF…",
+  "rx_pdf_failed": "לא ניתן היה ליצור את קובץ ה-PDF. השתמשו בהדפסה ובחרו \"שמירה כ-PDF\"."
 }

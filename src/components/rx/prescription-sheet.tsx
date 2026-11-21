@@ -1,5 +1,6 @@
 "use client";
 import Image from "next/image";
+import { useEffect, useRef, useState } from "react";
 import { useI18n } from "@/lib/i18n/client";
 import { formatDate } from "./shell";
 
@@ -130,10 +131,135 @@ export function PrescriptionSheet({ data }: { data: SheetData }) {
   );
 }
 
-// Opens the browser print dialog ("Save as PDF" or a printer). The file name carries no patient data.
+type PdfResult = { url: string; preview: string; name: string };
+
+// Renders the sheet (same fonts, RTL shaping and layout as on screen) into an A4 PDF in the browser.
+// Nothing is uploaded or stored; the file name carries no patient data.
+async function buildPdf(sheet: HTMLElement): Promise<PdfResult> {
+  const [{ toCanvas }, { jsPDF }] = await Promise.all([
+    import("html-to-image"),
+    import("jspdf"),
+  ]);
+  // Lay the sheet out at a fixed A4-like width so phones and desktops produce the same document.
+  const host = document.createElement("div");
+  host.setAttribute("aria-hidden", "true");
+  host.dir = document.documentElement.dir || "rtl";
+  host.style.cssText =
+    "position:fixed;top:0;left:-10000px;width:760px;background:#fff;pointer-events:none;";
+  const clone = sheet.cloneNode(true) as HTMLElement;
+  clone.style.margin = "0";
+  clone.style.width = "760px";
+  clone.style.maxWidth = "none";
+  host.appendChild(clone);
+  document.body.appendChild(host);
+  try {
+    await document.fonts?.ready;
+    await Promise.all(
+      Array.from(clone.querySelectorAll("img")).map((img) =>
+        img.complete ? null : img.decode().catch(() => null),
+      ),
+    );
+    const canvas = await toCanvas(clone, {
+      pixelRatio: 2,
+      backgroundColor: "#ffffff",
+      width: clone.offsetWidth,
+      height: clone.offsetHeight,
+    });
+    const pdf = new jsPDF({
+      unit: "mm",
+      format: "a4",
+      orientation: "portrait",
+      compress: true,
+    });
+    const margin = 12;
+    const contentW = 210 - margin * 2;
+    const contentH = 297 - margin * 2;
+    const pxPerMm = canvas.width / contentW;
+    const pagePx = Math.floor(contentH * pxPerMm);
+    for (let y = 0, page = 0; y < canvas.height; y += pagePx, page++) {
+      const sliceH = Math.min(pagePx, canvas.height - y);
+      const slice = document.createElement("canvas");
+      slice.width = canvas.width;
+      slice.height = sliceH;
+      const ctx = slice.getContext("2d");
+      if (!ctx) throw new Error("canvas unavailable");
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, slice.width, slice.height);
+      ctx.drawImage(canvas, 0, y, canvas.width, sliceH, 0, 0, canvas.width, sliceH);
+      if (page > 0) pdf.addPage();
+      pdf.addImage(
+        slice.toDataURL("image/jpeg", 0.92),
+        "JPEG",
+        margin,
+        margin,
+        contentW,
+        sliceH / pxPerMm,
+      );
+    }
+    pdf.setProperties({ title: "Clinic RX prescription", creator: "Clinic RX" });
+    return {
+      url: URL.createObjectURL(pdf.output("blob")),
+      preview: canvas.toDataURL("image/png"),
+      name: `ClinicRX-Rx-${new Date().toISOString().slice(0, 10)}.pdf`,
+    };
+  } finally {
+    host.remove();
+  }
+}
+
+function downloadPdf(result: PdfResult) {
+  const a = document.createElement("a");
+  a.href = result.url;
+  a.download = result.name;
+  a.rel = "noopener";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}
+
+// Preview / download a real PDF file, plus the browser print dialog. Uses the sheet in the same panel.
 export function SavePdfButton({ className = "" }: { className?: string }) {
   const { t } = useI18n();
-  function save() {
+  const anchor = useRef<HTMLSpanElement>(null);
+  const dialog = useRef<HTMLDialogElement>(null);
+  const [pdf, setPdf] = useState<PdfResult | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(
+    () => () => {
+      if (pdf) URL.revokeObjectURL(pdf.url);
+    },
+    [pdf],
+  );
+
+  async function ensure(): Promise<PdfResult | null> {
+    if (pdf) return pdf;
+    const sheet = anchor.current
+      ?.closest("section")
+      ?.querySelector<HTMLElement>(".cx-sheet");
+    if (!sheet) return null;
+    setBusy(true);
+    setFailed(false);
+    try {
+      const result = await buildPdf(sheet);
+      setPdf(result);
+      return result;
+    } catch {
+      setFailed(true);
+      return null;
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function preview() {
+    if (await ensure()) dialog.current?.showModal();
+  }
+  async function save() {
+    const result = await ensure();
+    if (result) downloadPdf(result);
+  }
+  function print() {
     const previous = document.title;
     document.title = `ClinicRX-Rx-${new Date().toISOString().slice(0, 10)}`;
     const restore = () => {
@@ -145,13 +271,69 @@ export function SavePdfButton({ className = "" }: { className?: string }) {
   }
   return (
     <>
+      <span ref={anchor} hidden />
       <button
         type="button"
-        className={`cx-btn is-secondary ${className}`}
+        className={`cx-btn ${className}`}
+        disabled={busy}
+        onClick={preview}
+      >
+        {busy ? t("rx_pdf_generating") : t("rx_pdf_preview")}
+      </button>
+      <button
+        type="button"
+        className="cx-btn is-secondary"
+        disabled={busy}
         onClick={save}
       >
-        {t("rx_save_pdf")}
+        {t("rx_pdf_download")}
       </button>
+      <button type="button" className="cx-btn is-secondary" onClick={print}>
+        {t("rx_print")}
+      </button>
+      {failed && (
+        <span className="cx-hint" role="alert">
+          {t("rx_pdf_failed")}
+        </span>
+      )}
+      <dialog
+        ref={dialog}
+        className="cx-pdf-dialog cx-noprint"
+        aria-label={t("rx_pdf_preview")}
+      >
+        {pdf && (
+          <>
+            <div className="cx-pdf-frame">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={pdf.preview} alt={t("rx_sheet_title")} />
+            </div>
+            <div className="cx-pdf-actions">
+              <button
+                type="button"
+                className="cx-btn"
+                onClick={() => downloadPdf(pdf)}
+              >
+                {t("rx_pdf_download")}
+              </button>
+              <a
+                className="cx-btn is-secondary"
+                href={pdf.url}
+                target="_blank"
+                rel="noopener"
+              >
+                {t("rx_pdf_open")}
+              </a>
+              <button
+                type="button"
+                className="cx-btn is-secondary"
+                onClick={() => dialog.current?.close()}
+              >
+                {t("rx_pdf_close")}
+              </button>
+            </div>
+          </>
+        )}
+      </dialog>
     </>
   );
 }
