@@ -312,3 +312,13 @@ test("a legacy full completion counts as fully dispensed with one history entry"
   );
   assert.equal((await fill(l, [{ item_id: qty(l, "MED A").id, quantity: 1 }])).code, "PT409");
 });
+
+test("the sheet shows the clinic's current name after a rename", async () => {
+  const r = await issue(two());
+  await db.owner.query("update public.clinics set name='RENAMED CLINIC' where id=$1", [id.clinic]);
+  try {
+    assert.equal((await lookup(ID, r.code)).clinic_name, "RENAMED CLINIC");
+  } finally {
+    await db.owner.query("update public.clinics set name='SYNTHETIC CLINIC' where id=$1", [id.clinic]);
+  }
+});
