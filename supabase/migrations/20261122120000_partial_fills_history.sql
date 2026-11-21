@@ -259,18 +259,20 @@ begin
   return rx_private.public_fill_receipt(f.id)||jsonb_build_object('replayed',true);
 end;
 $$;
-reset role;
-revoke create on schema public from rx_public_executor;
-revoke rx_public_executor from current_user;
-
+-- Grants on executor-owned functions are issued by the owner itself; on hosted projects the migration role is not a
+-- superuser, so grants/revokes made as that role would not touch the owner's grants.
 revoke all on function public.public_fill_prescription(uuid,uuid,uuid,boolean,jsonb,text), public.public_recover_fill(uuid,uuid)
   from public, anon, authenticated, service_role;
 grant execute on function public.public_fill_prescription(uuid,uuid,uuid,boolean,jsonb,text), public.public_recover_fill(uuid,uuid)
   to anon, authenticated;
--- Hardening: the keyed short-code digest is an internal helper (used only by definer functions owned by the
--- migration role); it must not inherit the default PUBLIC execute privilege.
-revoke all on function rx_private.short_digest(uuid,text) from public, anon, authenticated, service_role;
 -- The all-or-nothing public endpoint ignored partial history; it is closed in favour of public_fill_prescription.
 revoke execute on function public.public_dispense_prescription(uuid,uuid,uuid,boolean,boolean,text), public.public_recover_dispensing(uuid,uuid)
   from anon, authenticated;
+reset role;
+revoke create on schema public from rx_public_executor;
+revoke rx_public_executor from current_user;
+
+-- Hardening: the keyed short-code digest is an internal helper (used only by definer functions owned by the
+-- migration role); it must not inherit the default PUBLIC execute privilege.
+revoke all on function rx_private.short_digest(uuid,text) from public, anon, authenticated, service_role;
 commit;
