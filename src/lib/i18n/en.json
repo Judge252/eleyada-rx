@@ -796,17 +796,11 @@
   "rx_footer": "Internal pilot. Synthetic data only.",
   "rx_instructions": "Instructions",
   "rx_sheet_title": "Digital prescription",
-  "rx_save_pdf": "Save as PDF / Print",
-  "rx_pdf_hint": "Preview or download the prescription as a PDF file. It is made in your browser from the permanent record; nothing extra is stored on the server.",
+  "rx_save_pdf": "Print / Save PDF",
+  "rx_pdf_hint": "To keep a copy, choose \"Save as PDF\" in the print dialog. The document is made in your browser from the permanent record.",
   "rx_dispensed_on": "Dispensed on",
   "rx_notes_title": "Notes",
   "rx_sheet_footer": "Generated from the Clinic RX digital prescription record.",
-  "rx_pdf_preview": "Preview PDF",
-  "rx_pdf_download": "Download PDF",
-  "rx_pdf_open": "Open PDF",
-  "rx_pdf_close": "Close",
-  "rx_pdf_generating": "Preparing PDF…",
-  "rx_pdf_failed": "The PDF could not be created. Use Print instead and choose \"Save as PDF\".",
   "rx_state_partial": "Partially dispensed. The remaining quantities can be dispensed at any pharmacy until the prescription expires.",
   "rx_hist_title": "Dispensing history",
   "rx_hist_none": "Nothing has been dispensed yet.",
@@ -828,5 +822,6 @@
   "rx_fill_need_pharmacy": "Enter the pharmacy name (at least 2 characters).",
   "rx_disp_title_partial": "Partial dispensing recorded",
   "rx_disp_body_partial": "Saved. The remaining quantities are shown to any pharmacy that opens this prescription.",
-  "rx_disp_pharmacy": "Pharmacy"
+  "rx_disp_pharmacy": "Pharmacy",
+  "rx_seal_alt": "ClinicRX digital prescription seal"
 }

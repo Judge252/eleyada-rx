@@ -8,7 +8,7 @@ import {
   type FillHistoryEntry,
   type FillReceipt,
 } from "@/lib/experience/contracts";
-import { PrescriptionSheet, SavePdfButton, type SheetData } from "./prescription-sheet";
+import { PrescriptionSheet, PrintButton, type SheetData } from "./prescription-sheet";
 import {
   Notice,
   Shell,
@@ -297,7 +297,7 @@ export function PharmacyPortal() {
         <section className="cx-panel">
           <PrescriptionSheet data={sheet} />
           <div className="cx-actions cx-noprint">
-            <SavePdfButton />
+            <PrintButton />
             {!fillable && (
               <button className="cx-btn" onClick={reset}>
                 {t("rx_start_over")}

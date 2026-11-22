@@ -9,7 +9,7 @@ import {
   type PrescriberContext,
   type Receipt,
 } from "@/lib/experience/contracts";
-import { PrescriptionSheet, SavePdfButton } from "./prescription-sheet";
+import { PrescriptionSheet, PrintButton } from "./prescription-sheet";
 import {
   Notice,
   Shell,
@@ -440,7 +440,7 @@ export function DoctorWorkspace() {
           <p className="cx-hint cx-noprint">{t("rx_code_help")}</p>
           <p className="cx-hint cx-noprint">{t("rx_pdf_hint")}</p>
           <div className="cx-actions">
-            <SavePdfButton />
+            <PrintButton />
             {!receipt.accessCode && (
               <button
                 className="cx-btn is-secondary"

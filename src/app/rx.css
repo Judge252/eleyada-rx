@@ -382,41 +382,6 @@
   color: var(--cx-primary);
   font-weight: 600;
 }
-.cx-sheet {
-  border: 1px solid var(--cx-line);
-  border-radius: var(--cx-radius);
-  padding: 20px;
-  background: #fff;
-}
-.cx-sheet-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  padding-block-end: 12px;
-  margin-block-end: 12px;
-  border-block-end: 2px solid var(--cx-primary);
-}
-.cx-sheet-h {
-  font-size: 1rem;
-  margin: 16px 0 6px;
-}
-.cx-sheet-status {
-  border: 2px solid var(--cx-warn);
-  color: var(--cx-warn);
-  background: var(--cx-warn-soft);
-  padding: 8px 12px;
-  margin-block-end: 12px;
-  font-weight: 700;
-  border-radius: var(--cx-radius);
-}
-.cx-sheet-foot {
-  margin-block-start: 16px;
-  padding-block-start: 8px;
-  border-block-start: 1px solid var(--cx-line);
-  color: var(--cx-muted);
-  font-size: 0.75rem;
-}
 .cx-footer {
   border-block-start: 1px solid var(--cx-line);
   padding: 14px 16px;
@@ -457,104 +422,6 @@
   .cx-dl dd {
     margin-block-end: 8px;
   }
-}
-@media print {
-  .cx-header,
-  .cx-footer,
-  .cx-aside,
-  .cx-actions,
-  .cx-steps,
-  .cx-skip,
-  .cx-noprint {
-    display: none !important;
-  }
-  .cx-app,
-  .cx-panel {
-    background: #fff;
-    border: 0;
-  }
-  .cx-main {
-    padding: 0;
-    max-width: none;
-  }
-  .cx-sheet {
-    border: 0;
-    padding: 0;
-  }
-  .cx-panel {
-    padding: 0;
-    margin: 0;
-  }
-  .cx-code {
-    border: 2px solid #000;
-    background: #fff;
-    color: #000;
-  }
-}
-
-/* PDF preview dialog */
-.cx-pdf-dialog {
-  width: min(860px, calc(100vw - 24px));
-  max-height: calc(100dvh - 24px);
-  padding: 12px;
-  border: 1px solid var(--cx-line);
-  border-radius: var(--cx-radius);
-  background: var(--cx-surface);
-  color: var(--cx-text);
-}
-.cx-pdf-dialog::backdrop {
-  background: rgb(0 0 0 / 0.55);
-}
-.cx-pdf-frame {
-  max-height: calc(100dvh - 150px);
-  overflow: auto;
-  background: #e9ecef;
-  padding: 8px;
-  border-radius: var(--cx-radius);
-}
-.cx-pdf-frame img {
-  display: block;
-  width: 100%;
-  height: auto;
-  background: #fff;
-  box-shadow: 0 1px 4px rgb(0 0 0 / 0.2);
-}
-.cx-pdf-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 12px;
-}
-.cx-pdf-actions a.cx-btn {
-  text-decoration: none;
-}
-
-/* Dispensing history (sheet + PDF) */
-.cx-history {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  gap: 10px;
-}
-.cx-history > li {
-  border: 1px solid var(--cx-line);
-  border-radius: var(--cx-radius);
-  padding: 10px 12px;
-}
-.cx-history-head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px 12px;
-}
-.cx-history-head span:not(.cx-state-pill) {
-  color: var(--cx-muted);
-  font-size: 0.9rem;
-}
-.cx-history ul {
-  margin: 6px 0 0;
-  padding-inline-start: 18px;
 }
 
 /* Partial dispensing form */
@@ -599,17 +466,387 @@
     grid-template-columns: 1fr;
   }
 }
-@media print {
-  .cx-history > li {
-    break-inside: avoid;
+
+/* ==========================================================================
+   Prescription document (screen preview + native print / Save as PDF).
+   White page, navy headings, restrained teal accent, light-grey rules. Logical properties keep RTL/LTR correct.
+   ========================================================================== */
+.cx-sheet {
+  --rx-navy: #14233b;
+  --rx-ink: #27313c;
+  --rx-muted: #6a7480;
+  --rx-rule: #dde2e6;
+  --rx-teal: var(--cx-primary);
+  background: #fff;
+  color: var(--rx-ink);
+  border: 1px solid var(--rx-rule);
+  border-radius: 4px;
+  padding: 28px 32px 22px;
+  font-size: 15px;
+  line-height: 1.45;
+}
+.cx-sheet-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding-block-end: 10px;
+  margin-block-end: 18px;
+  border-block-end: 2px solid var(--rx-teal);
+}
+.cx-sheet-logo {
+  height: 24px;
+  width: auto;
+}
+.cx-sheet-title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--rx-navy);
+  letter-spacing: 0.02em;
+}
+.cx-sheet-status {
+  border-inline-start: 3px solid var(--cx-warn);
+  background: var(--cx-warn-soft);
+  color: var(--cx-warn);
+  padding: 6px 12px;
+  margin-block-end: 16px;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+.cx-sheet-label {
+  color: var(--rx-muted);
+  font-size: 0.74rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+/* Prescribing doctor + clinic */
+.cx-sheet-parties {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px 32px;
+  padding-block-end: 14px;
+  border-block-end: 1px solid var(--rx-rule);
+}
+.cx-party,
+.cx-patient-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.cx-party-doctor {
+  font-size: 1.32rem;
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--rx-navy);
+  overflow-wrap: anywhere;
+}
+.cx-party-clinic {
+  font-size: 1.12rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--rx-ink);
+  overflow-wrap: anywhere;
+}
+
+/* Patient + dates */
+.cx-sheet-patient {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+  gap: 12px 32px;
+  padding-block: 14px;
+  border-block-end: 1px solid var(--rx-rule);
+}
+.cx-patient-name {
+  font-size: 1.2rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--rx-navy);
+  overflow-wrap: anywhere;
+}
+.cx-patient-id {
+  margin-block-start: 4px;
+  font-size: 0.95rem;
+}
+.cx-patient-id .cx-mono {
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: var(--rx-ink);
+}
+.cx-sheet-dates {
+  margin: 0;
+  display: grid;
+  gap: 4px;
+  align-content: start;
+  font-size: 0.85rem;
+}
+.cx-sheet-dates > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+.cx-sheet-dates dt {
+  color: var(--rx-muted);
+}
+.cx-sheet-dates dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Section headings */
+.cx-sheet-section {
+  margin: 20px 0 6px;
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: var(--rx-navy);
+  letter-spacing: 0.03em;
+}
+.cx-sheet-section.is-minor {
+  margin-block-start: 18px;
+  font-size: 0.78rem;
+  color: var(--rx-muted);
+}
+
+/* Medications */
+.cx-rx-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-block-start: 1px solid var(--rx-navy);
+}
+.cx-rx-item {
+  display: grid;
+  grid-template-columns: 1.6rem minmax(0, 1fr);
+  gap: 0 8px;
+  padding-block: 10px;
+  border-block-end: 1px solid var(--rx-rule);
+}
+.cx-rx-num {
+  font-weight: 700;
+  color: var(--rx-teal);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.6;
+}
+.cx-rx-top {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 2px 16px;
+}
+.cx-rx-name {
+  font-size: 1.06rem;
+  font-weight: 700;
+  color: var(--rx-navy);
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+.cx-rx-qty {
+  white-space: nowrap;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.cx-rx-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 18px;
+  margin: 4px 0 0;
+  font-size: 0.88rem;
+}
+.cx-rx-details > div {
+  display: flex;
+  gap: 6px;
+}
+.cx-rx-details dt {
+  color: var(--rx-muted);
+}
+.cx-rx-details dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.cx-rx-instructions,
+.cx-sheet-notes {
+  margin: 4px 0 0;
+  font-size: 0.93rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.cx-sheet-notes {
+  margin: 0;
+}
+
+/* Patient access code (doctor receipt only) */
+.cx-sheet .cx-code {
+  display: inline-block;
+  margin: 0;
+  padding: 6px 16px;
+  font-size: 1.2rem;
+  letter-spacing: 0.18em;
+  border: 1.5px solid var(--rx-teal);
+  border-radius: 3px;
+  background: var(--cx-primary-soft);
+  color: var(--rx-navy);
+}
+
+/* Dispensing history: compact, secondary */
+.cx-history {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 0.84rem;
+}
+.cx-history > li {
+  padding-block: 6px;
+  border-block-end: 1px dashed var(--rx-rule);
+}
+.cx-history > li:last-child {
+  border-block-end: 0;
+}
+.cx-history-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 12px;
+}
+.cx-history-head > span {
+  color: var(--rx-muted);
+}
+.cx-history-head > .cx-history-tag {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--cx-ok);
+}
+.cx-history-head > .cx-history-tag.is-partial {
+  color: var(--cx-warn);
+}
+.cx-history-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 14px;
+  margin-block-start: 2px;
+}
+.cx-sheet-empty {
+  margin: 0;
+  font-size: 0.84rem;
+  color: var(--rx-muted);
+}
+
+/* Footer: statement + official seal; the seal sits at the lower right in both languages */
+.cx-sheet-foot {
+  direction: ltr;
+  display: flex;
+  align-items: flex-end;
+  gap: 20px;
+  margin-block-start: 26px;
+  padding-block-start: 10px;
+  border-block-start: 1px solid var(--rx-rule);
+}
+.cx-sheet-foot-text {
+  flex: 1 1 auto;
+  margin: 0;
+  font-size: 0.74rem;
+  color: var(--rx-muted);
+  text-align: start;
+}
+html[dir="rtl"] .cx-sheet-foot-text {
+  direction: rtl;
+}
+.cx-sheet-seal {
+  flex: none;
+  width: 26mm;
+  height: 26mm;
+  object-fit: contain;
+}
+
+@media (max-width: 599px) {
+  .cx-sheet {
+    padding: 18px 16px 14px;
+  }
+  .cx-sheet-patient {
+    grid-template-columns: 1fr;
+  }
+  .cx-sheet-seal {
+    width: 22mm;
+    height: 22mm;
   }
 }
 
-/* The PDF is always laid out at A4 width, so it uses the wide layout even when generated on a phone. */
-.cx-sheet.cx-pdf-render .cx-dl {
-  grid-template-columns: max-content 1fr;
-  gap: 8px 16px;
+/* ==========================================================================
+   Print / Save as PDF: only the prescription document, on A4.
+   ========================================================================== */
+@page {
+  size: A4;
+  margin: 14mm 14mm 16mm;
 }
-.cx-sheet.cx-pdf-render .cx-dl dd {
-  margin-block-end: 0;
+@media print {
+  html,
+  body {
+    background: #fff !important;
+  }
+  .cx-app {
+    display: block;
+    min-height: 0;
+    background: #fff;
+  }
+  .cx-header,
+  .cx-footer,
+  .cx-aside,
+  .cx-actions,
+  .cx-steps,
+  .cx-skip,
+  .cx-noprint,
+  .cx-title,
+  .cx-lede,
+  .cx-notice,
+  .cx-hint {
+    display: none !important;
+  }
+  /* Everything around the document is hidden; panels that hold it lose their chrome. */
+  .cx-layout > div > :not(:has(.cx-sheet)) {
+    display: none !important;
+  }
+  .cx-panel:has(.cx-sheet) > :not(.cx-sheet) {
+    display: none !important;
+  }
+  .cx-main,
+  .cx-layout,
+  .cx-layout > div:has(.cx-sheet),
+  .cx-panel:has(.cx-sheet) {
+    display: block !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    background: #fff !important;
+    box-shadow: none !important;
+  }
+  .cx-sheet {
+    border: 0;
+    border-radius: 0;
+    padding: 0;
+    font-size: 10.5pt;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .cx-sheet-parties {
+    grid-template-columns: 1fr 1fr;
+  }
+  .cx-sheet-patient {
+    grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+  }
+  .cx-sheet-seal {
+    width: 26mm;
+    height: 26mm;
+  }
+  .cx-rx-item,
+  .cx-history > li,
+  .cx-sheet-code,
+  .cx-sheet-foot {
+    break-inside: avoid;
+  }
+  .cx-sheet-section {
+    break-after: avoid;
+  }
 }

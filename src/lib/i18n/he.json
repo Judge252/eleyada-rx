@@ -796,17 +796,11 @@
   "rx_footer": "בדיקה פנימית. נתונים סינתטיים בלבד.",
   "rx_instructions": "הוראות",
   "rx_sheet_title": "מרשם דיגיטלי",
-  "rx_save_pdf": "שמירה כ-PDF / הדפסה",
-  "rx_pdf_hint": "ניתן לצפות במרשם או להוריד אותו כקובץ PDF. הקובץ נוצר בדפדפן מהרשומה הקבועה; לא נשמר קובץ נוסף בשרת.",
+  "rx_save_pdf": "הדפסה / שמירה כ-PDF",
+  "rx_pdf_hint": "לשמירת עותק בחרו \"שמירה כ-PDF\" בחלון ההדפסה. המסמך נוצר בדפדפן מהרשומה הקבועה.",
   "rx_dispensed_on": "נופק בתאריך",
   "rx_notes_title": "הערות",
   "rx_sheet_footer": "הופק מרשומת המרשם הדיגיטלי של Clinic RX.",
-  "rx_pdf_preview": "תצוגה מקדימה של PDF",
-  "rx_pdf_download": "הורדת PDF",
-  "rx_pdf_open": "פתיחת PDF",
-  "rx_pdf_close": "סגירה",
-  "rx_pdf_generating": "מכין PDF…",
-  "rx_pdf_failed": "לא ניתן היה ליצור את קובץ ה-PDF. השתמשו בהדפסה ובחרו \"שמירה כ-PDF\".",
   "rx_state_partial": "נופק חלקית. את הכמויות הנותרות ניתן לנפק בכל בית מרקחת עד תום תוקף המרשם.",
   "rx_hist_title": "היסטוריית ניפוק",
   "rx_hist_none": "עדיין לא נופק דבר.",
@@ -828,5 +822,6 @@
   "rx_fill_need_pharmacy": "יש להזין את שם בית המרקחת (2 תווים לפחות).",
   "rx_disp_title_partial": "ניפוק חלקי נרשם",
   "rx_disp_body_partial": "נשמר. הכמויות הנותרות יוצגו לכל בית מרקחת שיפתח מרשם זה.",
-  "rx_disp_pharmacy": "בית מרקחת"
+  "rx_disp_pharmacy": "בית מרקחת",
+  "rx_seal_alt": "חותמת מרשם דיגיטלי של ClinicRX"
 }

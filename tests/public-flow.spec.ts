@@ -170,7 +170,7 @@ test("doctor: validate, review, uncertain issue keeps one request, receipt shows
   await expect(page.locator(".cx-sheet")).toContainText("Synthetic Clinic");
   await expect(page.locator(".cx-sheet")).toContainText("Dr Synthetic");
   await expect(page.locator(".cx-sheet")).toContainText("Synthetic Patient");
-  await expect(page.getByRole("button", { name: "Download PDF" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Print / Save PDF" })).toBeVisible();
   const issues = calls.filter((c) => c.operation === "issue");
   expect(issues).toHaveLength(2);
   expect(issues[0].requestId).toBe(issues[1].requestId);
@@ -274,7 +274,7 @@ for (const state of ["dispensed", "cancelled", "expired"])
     await page.getByRole("button", { name: "Open prescription" }).click();
     await expect(page.locator(".cx-sheet-status")).toBeVisible();
     await expect(page.getByText("Synthetic Patient")).toBeVisible();
-    await expect(page.getByRole("button", { name: "Download PDF" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Print / Save PDF" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Record dispensing" })).toHaveCount(0);
   });
 test("pharmacy not-found and throttled replies are generic", async ({ page }) => {
