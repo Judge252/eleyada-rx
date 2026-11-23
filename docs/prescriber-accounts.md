@@ -13,12 +13,22 @@ Username rule: lowercase `a-z 0-9 . _ -`, 3–32 characters, starts with a lette
 1. Supabase dashboard (project `fckdsiozmufyhbnignet`) → Authentication → Users → **Add user → Create new user**. Email: `<username>@prescribers.clinic-rx.invalid`. Enter an owner-supplied password (never in chat or source), tick **Auto Confirm User**. Do not enable public signup.
 2. Copy the new user's UUID. In the trusted SQL editor, in one transaction, create the application identity (one user per real doctor, so attribution stays individual):
 
+Every doctor and clinic gets **both a Hebrew and an English name**; the app shows the one matching the reader's language (Hebrew UI → Hebrew letters, English UI → English letters) on screen and on printed prescriptions.
+
 ```sql
 begin;
 insert into public.app_users(id,role) values ('AUTH_UUID'::uuid,'doctor');
-insert into public.prescribers(user_id,display_name,approved) values ('AUTH_UUID'::uuid,'APPROVED DISPLAY NAME',true);
+insert into public.prescribers(user_id,display_name,approved,display_name_he,display_name_en)
+  values ('AUTH_UUID'::uuid,'ENGLISH NAME',true,'שם בעברית','ENGLISH NAME');
 insert into public.clinic_memberships(user_id,clinic_id) values ('AUTH_UUID'::uuid,'CLINIC_UUID'::uuid);
 commit;
+```
+
+New clinic (same rule: Hebrew + English name, then an active entitlement):
+
+```sql
+with c as (insert into public.clinics(name,name_he,name_en) values ('שם בעברית','שם בעברית','English Name') returning id)
+insert into public.clinic_entitlements(clinic_id,is_active,starts_at,ends_at) select id,true,now(),null from c;
 ```
 
 3. Entitlement is per clinic (`clinic_entitlements`); inactive entitlement blocks **new** issuance only. Records and cancellation stay available.
