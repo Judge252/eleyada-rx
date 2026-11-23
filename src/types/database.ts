@@ -151,17 +151,23 @@ export type Database = {
           id: string;
           is_active: boolean;
           name: string;
+          name_en: string | null;
+          name_he: string | null;
         };
         ComputedFields: never;
         Insert: {
           id?: string;
           is_active?: boolean;
           name: string;
+          name_en?: string | null;
+          name_he?: string | null;
         };
         Update: {
           id?: string;
           is_active?: boolean;
           name?: string;
+          name_en?: string | null;
+          name_he?: string | null;
         };
         Relationships: [];
       };
@@ -269,17 +275,23 @@ export type Database = {
         Row: {
           approved: boolean;
           display_name: string;
+          display_name_en: string | null;
+          display_name_he: string | null;
           user_id: string;
         };
         ComputedFields: never;
         Insert: {
           approved?: boolean;
           display_name: string;
+          display_name_en?: string | null;
+          display_name_he?: string | null;
           user_id: string;
         };
         Update: {
           approved?: boolean;
           display_name?: string;
+          display_name_en?: string | null;
+          display_name_he?: string | null;
           user_id?: string;
         };
         Relationships: [

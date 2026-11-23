@@ -322,3 +322,32 @@ test("the sheet shows the clinic's current name after a rename", async () => {
     await db.owner.query("update public.clinics set name='SYNTHETIC CLINIC' where id=$1", [id.clinic]);
   }
 });
+
+test("doctor and clinic names come in Hebrew and English for the doctor context and the pharmacy lookup", async () => {
+  const r = await issue(two());
+  await db.owner.query(
+    "update public.prescribers set display_name_he='רופא סינתטי', display_name_en='Synthetic Doctor' where user_id=$1",
+    [id.doctor],
+  );
+  await db.owner.query("update public.clinics set name_he='המרפאה', name_en='The Clinic' where id=$1", [id.clinic]);
+  try {
+    const l = await lookup(ID, r.code);
+    assert.deepEqual(
+      [l.doctor_name, l.doctor_name_he, l.doctor_name_en, l.clinic_name, l.clinic_name_he, l.clinic_name_en],
+      ["SYNTHETIC DOCTOR", "רופא סינתטי", "Synthetic Doctor", "SYNTHETIC CLINIC", "המרפאה", "The Clinic"],
+    );
+    const ctx = await tx((c) => scalar(c, "select public.get_prescriber_context()"), "doctor");
+    assert.deepEqual(
+      [ctx.doctor_name_he, ctx.doctor_name_en, ctx.clinic_name_he, ctx.clinic_name_en],
+      ["רופא סינתטי", "Synthetic Doctor", "המרפאה", "The Clinic"],
+    );
+    // Lookups keep working (and stay fillable) with the extra fields.
+    assert.equal(l.state, "eligible");
+    assert.ok(l.lookup_id);
+  } finally {
+    await db.owner.query("update public.prescribers set display_name_he=null, display_name_en=null where user_id=$1", [id.doctor]);
+    await db.owner.query("update public.clinics set name_he=null, name_en=null where id=$1", [id.clinic]);
+  }
+  for (const bad of ["update public.clinics set name_he='' where id=$1", "update public.clinics set name_en='   ' where id=$1"])
+    await assert.rejects(() => db.owner.query(bad, [id.clinic]), (e) => e.code === "23514");
+});

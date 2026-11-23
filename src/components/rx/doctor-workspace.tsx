@@ -14,6 +14,7 @@ import {
   Notice,
   Shell,
   api,
+  localName,
   clearRequest,
   rememberRequest,
 } from "./shell";
@@ -33,7 +34,7 @@ const emptyMedicine = (key: number): Medicine => ({
 const blankPatient = { name: "", identifier: "", notes: "" };
 
 export function DoctorWorkspace() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [context, setContext] = useState<PrescriberContext>({
     state: "unauthorized",
   });
@@ -149,6 +150,8 @@ export function DoctorWorkspace() {
     setFeedback("");
   }
   const step = receipt ? 2 : review ? 1 : 0;
+  const doctorName = localName(locale, context.doctor_name_he, context.doctor_name_en, context.doctor_name);
+  const clinicName = localName(locale, context.clinic_name_he, context.clinic_name_en, context.clinic_name);
   const aside = (
     <aside className="cx-panel cx-aside cx-noprint">
       <dl>
@@ -156,10 +159,10 @@ export function DoctorWorkspace() {
         <dd>
           {loading
             ? t("rx_checking")
-            : (context.doctor_name ?? t("rx_unverified"))}
+            : (doctorName ?? t("rx_unverified"))}
         </dd>
         <dt>{t("rx_context_clinic")}</dt>
-        <dd>{context.clinic_name ?? "—"}</dd>
+        <dd>{clinicName ?? "—"}</dd>
         <dt>{t("rx_context_sub")}</dt>
         <dd>
           <span className={`cx-state-pill ${context.entitled ? "" : "is-off"}`}>
@@ -367,8 +370,8 @@ export function DoctorWorkspace() {
             </dd>
             <dt>{t("rx_prescriber")}</dt>
             <dd>
-              {context.doctor_name ?? t("rx_unverified")} ·{" "}
-              {context.clinic_name ?? "—"}
+              {doctorName ?? t("rx_unverified")} ·{" "}
+              {clinicName ?? "—"}
             </dd>
           </dl>
           {review.items.map((m, i) => (
@@ -425,8 +428,8 @@ export function DoctorWorkspace() {
           {review && (
             <PrescriptionSheet
               data={{
-                clinic: receipt.clinic_name ?? context.clinic_name,
-                doctor: receipt.doctor_name ?? context.doctor_name,
+                clinic: clinicName ?? receipt.clinic_name,
+                doctor: doctorName ?? receipt.doctor_name,
                 issuedAt: receipt.issued_at,
                 expiresAt: receipt.expires_at,
                 patientName: review.name,

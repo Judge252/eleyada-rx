@@ -17,6 +17,10 @@ export type PrescriberContext = {
   doctor_name?: string;
   clinic_id?: string;
   clinic_name?: string;
+  doctor_name_he?: string | null;
+  doctor_name_en?: string | null;
+  clinic_name_he?: string | null;
+  clinic_name_en?: string | null;
   entitled?: boolean;
 };
 export type Receipt = {

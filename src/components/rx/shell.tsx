@@ -44,6 +44,18 @@ export function clearRequest(key: string) {
     /* storage may be disabled */
   }
 }
+// Doctors and clinics carry a Hebrew and an English name; show the one in the reader's language letters,
+// then the other language, then the original single name.
+export function localName(
+  locale: "he" | "en",
+  he?: string | null,
+  en?: string | null,
+  fallback?: string | null,
+) {
+  const first = locale === "he" ? he : en;
+  const second = locale === "he" ? en : he;
+  return first?.trim() || second?.trim() || fallback?.trim() || null;
+}
 export function formatDate(value: string | undefined, locale: "he" | "en") {
   return value
     ? new Date(value).toLocaleString(locale === "he" ? "he-IL" : "en-GB")

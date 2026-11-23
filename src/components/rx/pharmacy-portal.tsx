@@ -15,6 +15,7 @@ import {
   api,
   clearRequest,
   formatDate,
+  localName,
   rememberRequest,
 } from "./shell";
 
@@ -36,6 +37,10 @@ type Lookup = {
   lookup_id?: string;
   doctor_name?: string;
   clinic_name?: string;
+  doctor_name_he?: string | null;
+  doctor_name_en?: string | null;
+  clinic_name_he?: string | null;
+  clinic_name_en?: string | null;
   patient: { name: string };
   issued_at: string;
   expires_at: string;
@@ -224,8 +229,8 @@ export function PharmacyPortal() {
 
   const sheet: SheetData | null = found
     ? {
-        clinic: found.clinic_name,
-        doctor: found.doctor_name,
+        clinic: localName(locale, found.clinic_name_he, found.clinic_name_en, found.clinic_name),
+        doctor: localName(locale, found.doctor_name_he, found.doctor_name_en, found.doctor_name),
         issuedAt: found.issued_at,
         expiresAt: found.expires_at,
         patientName: found.patient.name,

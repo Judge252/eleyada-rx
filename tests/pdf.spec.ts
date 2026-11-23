@@ -20,6 +20,10 @@ const doctor = {
   doctor_name: "Amin Abo Eshba",
   clinic_id: "00000000-0000-4000-8000-000000000002",
   clinic_name: "רמלה",
+  doctor_name_he: "אמין אבו אשבה",
+  doctor_name_en: "Amin Abo Eshba",
+  clinic_name_he: "רמלה",
+  clinic_name_en: "Ramla",
   entitled: true,
 };
 const item = (n: number, extra: Record<string, unknown> = {}) => ({
@@ -132,8 +136,10 @@ test("doctor receipt (Hebrew, one medication): one Print / Save PDF action and a
   await page.locator("button").filter({ hasText: /סקירת|Review/ }).first().click();
   await page.locator("button").filter({ hasText: /אישור והנפקת|Confirm and issue/ }).first().click();
   const sheet = page.locator(".cx-sheet");
-  await expect(sheet.locator(".cx-party-doctor")).toHaveText("Amin Abo Eshba");
+  // Hebrew UI: names in Hebrew letters, also in the side panel.
+  await expect(sheet.locator(".cx-party-doctor")).toHaveText("אמין אבו אשבה");
   await expect(sheet.locator(".cx-party-clinic")).toHaveText("רמלה");
+  await expect(page.locator(".cx-aside")).toContainText("אמין אבו אשבה");
   await expect(sheet.locator(".cx-patient-name")).toHaveText("אחמד אלקאדי");
   await expect(sheet.locator(".cx-rx-item")).toHaveCount(1);
   await expect(sheet.locator(".cx-rx-name")).toHaveText("Panadol");
@@ -142,6 +148,20 @@ test("doctor receipt (Hebrew, one medication): one Print / Save PDF action and a
   await checkPrintAction(page, /הדפסה \/ שמירה כ-PDF/);
   const pdf = await checkPrintLayout(page, "doctor-he-one");
   expect(pages(pdf)).toBe(1);
+});
+
+test("pharmacy shows doctor and clinic in the reader's language letters", async ({ page }) => {
+  const names = { doctor_name: "Salem Mehe", doctor_name_he: "סאלם מהה", doctor_name_en: "Salem Mehe", clinic_name: "המרפאה", clinic_name_he: "המרפאה", clinic_name_en: "The Clinic" };
+  for (const [lang, doctorName, clinicName] of [["en", "Salem Mehe", "The Clinic"], ["he", "סאלם מהה", "המרפאה"]] as const) {
+    await mock(page, lang, (input) => (input.operation === "lookup" ? { result: lookup([item(1)], names) } : { result: null }));
+    await page.goto("/portal");
+    await page.locator("#ph-id").fill("000012345");
+    await page.locator("#ph-code").fill(CODE);
+    await page.locator("form button[type=submit]").click();
+    await expect(page.locator(".cx-party-doctor")).toHaveText(doctorName);
+    await expect(page.locator(".cx-party-clinic")).toHaveText(clinicName);
+    await page.unrouteAll();
+  }
 });
 
 test("pharmacy (English UI, long names, mixed Hebrew/English, history): document hierarchy and print layout", async ({ page }) => {
