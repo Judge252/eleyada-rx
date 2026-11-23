@@ -823,5 +823,6 @@
   "rx_disp_title_partial": "Partial dispensing recorded",
   "rx_disp_body_partial": "Saved. The remaining quantities are shown to any pharmacy that opens this prescription.",
   "rx_disp_pharmacy": "Pharmacy",
-  "rx_seal_alt": "ClinicRX digital prescription seal"
+  "rx_seal_alt": "ClinicRX stamp: digitally signed document",
+  "rx_privacy_notice": "This document contains information protected under the Privacy Protection Law."
 }

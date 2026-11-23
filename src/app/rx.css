@@ -756,8 +756,16 @@ html[dir="rtl"] .cx-sheet-foot-text {
 .cx-sheet-seal {
   flex: none;
   width: 26mm;
-  height: 26mm;
-  object-fit: contain;
+  height: auto;
+}
+/* Privacy notice: the last line of every prescription */
+.cx-sheet-privacy {
+  margin: 12px 0 0;
+  padding-block-start: 8px;
+  border-block-start: 1px solid var(--rx-rule);
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--rx-muted);
 }
 
 @media (max-width: 599px) {
@@ -769,7 +777,6 @@ html[dir="rtl"] .cx-sheet-foot-text {
   }
   .cx-sheet-seal {
     width: 22mm;
-    height: 22mm;
   }
 }
 
@@ -838,13 +845,16 @@ html[dir="rtl"] .cx-sheet-foot-text {
   }
   .cx-sheet-seal {
     width: 26mm;
-    height: 26mm;
   }
   .cx-rx-item,
   .cx-history > li,
   .cx-sheet-code,
-  .cx-sheet-foot {
+  .cx-sheet-foot,
+  .cx-sheet-privacy {
     break-inside: avoid;
+  }
+  .cx-sheet-privacy {
+    break-before: avoid;
   }
   .cx-sheet-section {
     break-after: avoid;

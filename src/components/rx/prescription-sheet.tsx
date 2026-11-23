@@ -226,13 +226,14 @@ export function PrescriptionSheet({ data }: { data: SheetData }) {
         <p className="cx-sheet-foot-text">{t("rx_sheet_footer")}</p>
         {/* eslint-disable-next-line @next/next/no-img-element -- static asset; a plain img keeps print/PDF output exact */}
         <img
-          src="/branding/clinicrx-seal.png"
+          src="/branding/clinicrx-stamp.png"
           alt={t("rx_seal_alt")}
           className="cx-sheet-seal"
-          width={400}
-          height={400}
+          width={320}
+          height={318}
         />
       </footer>
+      <p className="cx-sheet-privacy">{t("rx_privacy_notice")}</p>
     </article>
   );
 }

@@ -94,6 +94,15 @@ async function checkPrintLayout(page: Page, name: string) {
   expect(Math.abs(box.width - box.height)).toBeLessThan(1);
   expect(box.x + box.width).toBeGreaterThan(sheet.x + sheet.width - 2); // lower right
   expect(box.y).toBeGreaterThanOrEqual(foot.y);
+  // The privacy notice is the last line of the document, below the stamp.
+  const privacy = page.locator(".cx-sheet > :last-child");
+  await expect(privacy).toHaveClass(/cx-sheet-privacy/);
+  await expect(privacy).toHaveText(/המסמך מכיל מידע מוגן על-פי חוק הגנת הפרטיות|Privacy Protection Law/);
+  expect((await privacy.boundingBox())!.y).toBeGreaterThan(box.y + box.height - 1);
+  // The stamp is served byte-for-byte as supplied.
+  const served = await page.request.get("/branding/clinicrx-stamp.png");
+  const { readFile } = await import("node:fs/promises");
+  expect(Buffer.compare(await served.body(), await readFile("stamp.png"))).toBe(0);
   const text = (await page.locator(".cx-sheet-foot-text").boundingBox())!;
   expect(text.x + text.width).toBeLessThanOrEqual(box.x + 0.5); // no overlap with the statement
   const pdf = await page.pdf({ format: "A4", preferCSSPageSize: true, printBackground: true });

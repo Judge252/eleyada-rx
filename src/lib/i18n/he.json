@@ -823,5 +823,6 @@
   "rx_disp_title_partial": "ניפוק חלקי נרשם",
   "rx_disp_body_partial": "נשמר. הכמויות הנותרות יוצגו לכל בית מרקחת שיפתח מרשם זה.",
   "rx_disp_pharmacy": "בית מרקחת",
-  "rx_seal_alt": "חותמת מרשם דיגיטלי של ClinicRX"
+  "rx_seal_alt": "חותמת ClinicRX: מסמך חתום דיגיטלית",
+  "rx_privacy_notice": "המסמך מכיל מידע מוגן על-פי חוק הגנת הפרטיות"
 }
