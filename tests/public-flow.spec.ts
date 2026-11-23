@@ -161,8 +161,10 @@ test("doctor: validate, review, uncertain issue keeps one request, receipt shows
   await page.locator("#patient-id").fill("٠٠٠۰۱۲۳۴۵");
   await page.locator("#med-1-name").fill("Synthetic אקמול");
   await page.locator("#med-1-quantity").fill("5");
+  await page.getByLabel("The patient has had an allergy test").check();
   await page.getByRole("button", { name: "Review prescription", exact: true }).click();
   await expect(page.getByText("000012345", { exact: true })).toBeVisible();
+  await expect(page.locator(".cx-allergy-review")).toHaveText("Performed");
   await page.getByRole("button", { name: "Confirm and issue prescription" }).click();
   await expect(page.getByRole("button", { name: "Back to edit" })).toBeDisabled();
   await page.getByRole("button", { name: "Retry the same request" }).click();
@@ -170,12 +172,14 @@ test("doctor: validate, review, uncertain issue keeps one request, receipt shows
   await expect(page.locator(".cx-sheet")).toContainText("Synthetic Clinic");
   await expect(page.locator(".cx-sheet")).toContainText("Dr Synthetic");
   await expect(page.locator(".cx-sheet")).toContainText("Synthetic Patient");
+  await expect(page.locator(".cx-patient-allergy")).toHaveText("Allergy test Performed");
   await expect(page.getByRole("button", { name: "Print / Save PDF" })).toBeVisible();
   const issues = calls.filter((c) => c.operation === "issue");
   expect(issues).toHaveLength(2);
   expect(issues[0].requestId).toBe(issues[1].requestId);
   expect(issues[0].payload).toEqual(issues[1].payload);
-  expect(Object.keys(issues[0].payload as object).sort()).toEqual(["identifier", "items", "name", "notes"]);
+  expect(Object.keys(issues[0].payload as object).sort()).toEqual(["allergy_test", "identifier", "items", "name", "notes"]);
+  expect((issues[0].payload as { allergy_test: boolean }).allergy_test).toBe(true);
   expect(await page.evaluate(() => Object.keys(sessionStorage).filter((k) => k.startsWith("rx.")))).toEqual([]);
 });
 test("doctor with inactive entitlement cannot confirm issuance", async ({ page }) => {

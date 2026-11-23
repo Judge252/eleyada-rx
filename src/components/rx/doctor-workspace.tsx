@@ -31,7 +31,7 @@ const emptyMedicine = (key: number): Medicine => ({
   quantity: "",
   instructions: "",
 });
-const blankPatient = { name: "", identifier: "", notes: "" };
+const blankPatient = { name: "", identifier: "", notes: "", allergy_test: false };
 
 export function DoctorWorkspace() {
   const { t, locale } = useI18n();
@@ -233,6 +233,18 @@ export function DoctorWorkspace() {
                 <small className="cx-hint">{t("rx_id_help")}</small>
               </label>
             </div>
+            <label className="cx-check" htmlFor="allergy-test">
+              <input
+                id="allergy-test"
+                type="checkbox"
+                checked={patient.allergy_test}
+                onChange={(e) =>
+                  setPatient({ ...patient, allergy_test: e.target.checked })
+                }
+              />
+              <span>{t("rx_allergy_check")}</span>
+            </label>
+            <small className="cx-hint">{t("rx_allergy_help")}</small>
           </section>
           <section className="cx-panel">
             <h2>{t("rx_medications")}</h2>
@@ -373,6 +385,10 @@ export function DoctorWorkspace() {
               {doctorName ?? t("rx_unverified")} ·{" "}
               {clinicName ?? "—"}
             </dd>
+            <dt>{t("rx_allergy_test")}</dt>
+            <dd className="cx-allergy-review">
+              {t(review.allergy_test ? "rx_allergy_yes" : "rx_allergy_no")}
+            </dd>
           </dl>
           {review.items.map((m, i) => (
             <div className="cx-med-row" key={i}>
@@ -436,6 +452,7 @@ export function DoctorWorkspace() {
                 patientId: review.identifier,
                 items: review.items,
                 notes: review.notes,
+                allergyTest: review.allergy_test ?? null,
                 code: receipt.accessCode,
               }}
             />

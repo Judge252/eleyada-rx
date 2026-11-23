@@ -575,6 +575,17 @@
   letter-spacing: 0.05em;
   color: var(--rx-ink);
 }
+.cx-patient-allergy {
+  margin-block-start: 4px;
+  font-size: 0.95rem;
+}
+.cx-patient-allergy strong {
+  font-weight: 700;
+  color: var(--rx-navy);
+}
+.cx-patient-allergy strong.is-not-done {
+  color: #9a3412;
+}
 .cx-sheet-dates {
   margin: 0;
   display: grid;

@@ -351,3 +351,31 @@ test("doctor and clinic names come in Hebrew and English for the doctor context 
   for (const bad of ["update public.clinics set name_he='' where id=$1", "update public.clinics set name_en='   ' where id=$1"])
     await assert.rejects(() => db.owner.query(bad, [id.clinic]), (e) => e.code === "23514");
 });
+
+test("allergy test answer is stored with the prescription, immutable, and shown to the pharmacy", async () => {
+  for (const [answer, expected] of [[true, true], [false, false], [undefined, null]]) {
+    const value = two();
+    if (answer !== undefined) value.allergy_test = answer;
+    const r = await issue(value);
+    assert.equal(r.allergy_test_done, expected);
+    const l = await lookup(ID, r.code);
+    assert.equal(l.allergy_test_done, expected);
+    assert.equal(
+      await scalar(db.owner, "select allergy_test_done from public.prescriptions where id=$1", [r.id]),
+      expected,
+    );
+  }
+  // Only a boolean is accepted.
+  for (const bad of ["yes", 1, null]) {
+    await assert.rejects(
+      () => issue({ ...two(), allergy_test: bad }),
+      (e) => e.code === "22023",
+    );
+  }
+  // Issued prescriptions cannot be changed afterwards.
+  const r = await issue({ ...two(), allergy_test: false });
+  await assert.rejects(
+    () => db.owner.query("update public.prescriptions set allergy_test_done=true where id=$1", [r.id]),
+    (e) => e.code === "23514",
+  );
+});

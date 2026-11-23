@@ -41,6 +41,7 @@ type Lookup = {
   doctor_name_en?: string | null;
   clinic_name_he?: string | null;
   clinic_name_en?: string | null;
+  allergy_test_done?: boolean | null;
   patient: { name: string };
   issued_at: string;
   expires_at: string;
@@ -236,6 +237,7 @@ export function PharmacyPortal() {
         patientName: found.patient.name,
         patientId,
         items: found.items,
+        allergyTest: found.allergy_test_done ?? null,
         status: found.state === "eligible" ? undefined : found.state,
         dispensedAt: found.state === "dispensed" ? found.dispensed_at : undefined,
         history: found.history ?? [],

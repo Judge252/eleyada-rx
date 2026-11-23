@@ -141,6 +141,8 @@ test("doctor receipt (Hebrew, one medication): one Print / Save PDF action and a
   await expect(sheet.locator(".cx-party-clinic")).toHaveText("רמלה");
   await expect(page.locator(".cx-aside")).toContainText("אמין אבו אשבה");
   await expect(sheet.locator(".cx-patient-name")).toHaveText("אחמד אלקאדי");
+  // Checkbox left unticked: printed as "not performed".
+  await expect(sheet.locator(".cx-patient-allergy")).toHaveText("בדיקת אלרגיה לא בוצעה");
   await expect(sheet.locator(".cx-rx-item")).toHaveCount(1);
   await expect(sheet.locator(".cx-rx-name")).toHaveText("Panadol");
   await expect(sheet.locator(".cx-code")).toHaveText(CODE);
@@ -151,7 +153,7 @@ test("doctor receipt (Hebrew, one medication): one Print / Save PDF action and a
 });
 
 test("pharmacy shows doctor and clinic in the reader's language letters", async ({ page }) => {
-  const names = { doctor_name: "Salem Mehe", doctor_name_he: "סאלם מהה", doctor_name_en: "Salem Mehe", clinic_name: "המרפאה", clinic_name_he: "המרפאה", clinic_name_en: "The Clinic" };
+  const names = { doctor_name: "Salem Mehe", doctor_name_he: "סאלם מהה", doctor_name_en: "Salem Mehe", clinic_name: "המרפאה", clinic_name_he: "המרפאה", clinic_name_en: "The Clinic", allergy_test_done: true };
   for (const [lang, doctorName, clinicName] of [["en", "Salem Mehe", "The Clinic"], ["he", "סאלם מהה", "המרפאה"]] as const) {
     await mock(page, lang, (input) => (input.operation === "lookup" ? { result: lookup([item(1)], names) } : { result: null }));
     await page.goto("/portal");
@@ -160,6 +162,7 @@ test("pharmacy shows doctor and clinic in the reader's language letters", async 
     await page.locator("form button[type=submit]").click();
     await expect(page.locator(".cx-party-doctor")).toHaveText(doctorName);
     await expect(page.locator(".cx-party-clinic")).toHaveText(clinicName);
+    await expect(page.locator(".cx-patient-allergy")).toHaveText(lang === "he" ? "בדיקת אלרגיה בוצעה" : "Allergy test Performed");
     await page.unrouteAll();
   }
 });

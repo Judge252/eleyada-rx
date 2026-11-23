@@ -90,6 +90,11 @@ test("form is Israel-only: country/type/forged actor or clinic keys and malforme
     formPayload({ ...good, items: [{ ...good.items[0], quantity: 1.5 }] }),
     null,
   );
+  // Allergy test: a boolean only, passed through as given.
+  assert.equal(formPayload({ ...good, allergy_test: true }).allergy_test, true);
+  assert.equal(formPayload({ ...good, allergy_test: false }).allergy_test, false);
+  assert.equal("allergy_test" in formPayload(good), false);
+  for (const bad of ["yes", 1, null]) assert.equal(formPayload({ ...good, allergy_test: bad }), null);
 });
 test("username maps deterministically to a reserved non-deliverable login identity; it is not a directory or claim", () => {
   assert.equal(normalizeUsername("  Dr.Cohen_1 "), "dr.cohen_1");

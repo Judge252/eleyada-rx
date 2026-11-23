@@ -824,5 +824,10 @@
   "rx_disp_body_partial": "Saved. The remaining quantities are shown to any pharmacy that opens this prescription.",
   "rx_disp_pharmacy": "Pharmacy",
   "rx_seal_alt": "ClinicRX stamp: digitally signed document",
-  "rx_privacy_notice": "This document contains information protected under the Privacy Protection Law."
+  "rx_privacy_notice": "This document contains information protected under the Privacy Protection Law.",
+  "rx_allergy_check": "The patient has had an allergy test",
+  "rx_allergy_help": "Leave unticked if no allergy test was done. The answer is printed on the prescription.",
+  "rx_allergy_test": "Allergy test",
+  "rx_allergy_yes": "Performed",
+  "rx_allergy_no": "Not performed"
 }

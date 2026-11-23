@@ -21,6 +21,8 @@ export type SheetData = {
   patientId?: string;
   items: SheetItem[];
   notes?: string;
+  // true = performed, false = not performed, null/undefined = not recorded (older prescriptions: not shown).
+  allergyTest?: boolean | null;
   code?: string;
   status?: "dispensed" | "cancelled" | "expired" | "partial";
   dispensedAt?: string;
@@ -92,6 +94,14 @@ export function PrescriptionSheet({ data }: { data: SheetData }) {
               <bdi className="cx-mono" dir="ltr">
                 {data.patientId}
               </bdi>
+            </span>
+          )}
+          {typeof data.allergyTest === "boolean" && (
+            <span className="cx-patient-allergy">
+              <span className="cx-sheet-label">{t("rx_allergy_test")}</span>{" "}
+              <strong className={data.allergyTest ? "is-done" : "is-not-done"}>
+                {t(data.allergyTest ? "rx_allergy_yes" : "rx_allergy_no")}
+              </strong>
             </span>
           )}
         </div>

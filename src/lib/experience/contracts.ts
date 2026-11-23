@@ -10,6 +10,8 @@ export type FormPayload = {
   identifier: string;
   notes: string;
   items: DraftItem[];
+  // Has the patient had an allergy test? Absent only from older clients (stored as "not recorded").
+  allergy_test?: boolean;
 };
 export type PrescriberContext = {
   state: "verified" | "unauthorized";
@@ -78,8 +80,10 @@ export function lookupInput(value: unknown) {
 export function formPayload(value: unknown): FormPayload | null {
   if (
     !object(value) ||
-    Object.keys(value).sort().join() !==
-      "identifier,items,name,notes"
+    !["identifier,items,name,notes", "allergy_test,identifier,items,name,notes"].includes(
+      Object.keys(value).sort().join(),
+    ) ||
+    ("allergy_test" in value && typeof value.allergy_test !== "boolean")
   )
     return null;
   const identifier = normalizeIsraeliId(value.identifier);
@@ -97,6 +101,7 @@ export function formPayload(value: unknown): FormPayload | null {
     name: draft.data.patient.name,
     notes: draft.data.doctorNotes,
     items: draft.data.items,
+    ...(typeof value.allergy_test === "boolean" ? { allergy_test: value.allergy_test } : {}),
   };
 }
 export function validRequestId(value: unknown): value is string {
